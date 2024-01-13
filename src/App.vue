@@ -3,6 +3,9 @@
     <nav class="navbar navbar-dark bg-primary">
       <div class="container-fluid">
         <img src="@/assets/pokeball.png" class="navbar-icon"/>
+        <button class="btn btn-secondary" @click="toggleLanguage">
+          Switch Language ({{ currentLanguage.toUpperCase() }})
+        </button>
         <form class="d-flex input-group w-auto">
           <input
               type="search"
@@ -20,10 +23,10 @@
             Filter by Type
           </button>
           <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-            <li v-for="type in pokemonTypes" :key="type">
+            <li v-for="type in pokemonTypes2" :key="type">
               <a class="dropdown-item" href="#">
-                <input type="checkbox" :value="type" v-model="selectedTypes">
-                {{ type }}
+                <img :src="findTypeIcon(type)" class="type-icon" alt="Type Icon" />
+                <input type="checkbox" :value="type" v-model="selectedTypes"> {{type}}
               </a>
             </li>
           </ul>
@@ -37,15 +40,15 @@
       <div class="pokemon-list">
         <div v-for="pokemon in pokemons" :key="pokemon.name" class="pokemon-card" :id="`pokemon-${pokemon.number}`" :class="{ 'highlighted': pokemon.number === foundPokemonNumber }">
           <h2>{{ pokemon.name }}</h2>
-          <img
-              :src="pokemon.image"
-              :alt="pokemon.name"
-              :class="{ 'jump-animation': pokemon.number === foundPokemonNumber }"
-          />
+          <img :src="pokemon.image" :alt="pokemon.name" :class="{ 'jump-animation': pokemon.number === foundPokemonNumber }" />
           <div class="pokemon-details">
             <p><strong>Height:</strong> {{ pokemon.details.height }}</p>
             <p><strong>Weight:</strong> {{ pokemon.details.weight }}</p>
-            <p><strong>Type:</strong> {{ pokemon.types.join(', ') }}</p>
+            <p><strong>Type:</strong>
+              <span v-for="type in pokemon.types" :key="type">
+              <img :src="findTypeIcon(type)" class="type-icon" alt="Type Icon" /> {{ type }}
+            </span>
+            </p>
             <p><strong>Number:</strong> {{ pokemon.number }}</p>
             <p><strong>Region:</strong> {{ pokemon.region }}</p>
             <div class="pokemon-moves">
@@ -65,22 +68,64 @@
           </div>
         </div>
       </div>
+
+
     </main>
 </template>
 <script>
 import axios from 'axios';
+import BugIcon from '@/assets/Bug_icon.png';
+import DarkIcon from '@/assets/Dark_icon.png';
+import DragonIcon from '@/assets/Dragon_icon.png';
+import ElectricIcon from '@/assets/Electric_icon.png';
+import FairyIcon from '@/assets/Fairy_icon.png';
+import FightingIcon from '@/assets/Fighting_icon.png';
+import FireIcon from '@/assets/Fire_icon.png';
+import FlyingIcon from '@/assets/Flying_icon.png';
+import GhostIcon from '@/assets/Ghost_icon.png';
+import GrassIcon from '@/assets/Grass_icon.png';
+import GroundIcon from '@/assets/Ground_icon.png';
+import IceIcon from '@/assets/Ice_icon_.png';
+import NormalIcon from '@/assets/Normal_icon.png';
+import PoisonIcon from '@/assets/Poison_icon.png';
+import PsychicIcon from '@/assets/Psychic_icon.png';
+import RockIcon from '@/assets/Rock_icon.png';
+import SteelIcon from '@/assets/Steel_icon.png';
+import WaterIcon from '@/assets/Water_icon.png';
+import QuestionMarkIcon from '@/assets/question_mark.png'
 
 export default {
   name: 'App',
   data() {
     return { //hier variablen anlegen key für language anlegen this. neue sprache zuweisen. vue.js ist reactiv ändert alle vorkommen im code, wo variablen referenziert
+      currentLanguage: 'en',
       pokemons: [],
-      pokemonTypes: [],
       allPokemons: [],
       selectedTypes: [],
       foundPokemonNumber: null,
       searchInput: '',
-      searchLabel: 'search'
+      searchLabel: 'search',
+      pokemonTypes2: [],
+      pokemonTypes: [
+        { name: 'bug', icon: BugIcon },
+        { name: 'dark', icon: DarkIcon },
+        { name: 'dragon', icon: DragonIcon },
+        { name: 'electric', icon: ElectricIcon },
+        { name: 'fairy', icon: FairyIcon },
+        { name: 'fighting', icon: FightingIcon },
+        { name: 'fire', icon: FireIcon },
+        { name: 'flying', icon: FlyingIcon },
+        { name: 'ghost', icon: GhostIcon },
+        { name: 'grass', icon: GrassIcon },
+        { name: 'ground', icon: GroundIcon },
+        { name: 'ice', icon: IceIcon },
+        { name: 'normal', icon: NormalIcon },
+        { name: 'poison', icon: PoisonIcon },
+        { name: 'psychic', icon: PsychicIcon },
+        { name: 'rock', icon: RockIcon },
+        { name: 'steel', icon: SteelIcon },
+        { name: 'water', icon: WaterIcon },
+      ],
     };
   },
   async mounted() { //Lifecyclehook
@@ -88,6 +133,38 @@ export default {
     await this.fetchPokemonTypes();
   },
   methods: {
+    toggleLanguage() {
+      if (this.currentLanguage === 'en') {
+        this.currentLanguage = 'de';
+      } else if (this.currentLanguage === 'de') {
+        this.currentLanguage = 'jp';
+      } else {
+        this.currentLanguage = 'en';
+      }
+    },
+    findTypeIcon(typeName) {
+      //haesslich aber Array iterieren klappt aus unerfindlichen Gruenden nicht :'(
+      console.log(typeName);
+      if(typeName === "bug") return BugIcon;
+      if(typeName === "dark") return DarkIcon;
+      if(typeName === "dragon") return DragonIcon;
+      if(typeName === "electric") return ElectricIcon;
+      if(typeName === "fairy") return FairyIcon;
+      if(typeName === "fighting") return FightingIcon;
+      if(typeName === "fire") return FireIcon;
+      if(typeName === "flying") return FlyingIcon;
+      if(typeName === "ghost") return GhostIcon;
+      if(typeName === "grass") return GrassIcon;
+      if(typeName === "ground") return GroundIcon;
+      if(typeName === "ice") return IceIcon;
+      if(typeName === "normal") return NormalIcon;
+      if(typeName === "poison") return PoisonIcon;
+      if(typeName === "psychic") return PsychicIcon;
+      if(typeName === "rock") return RockIcon;
+      if(typeName === "steel") return SteelIcon;
+      if(typeName === "water") return WaterIcon;
+      return QuestionMarkIcon;
+    },
     scrollToPokemon() {
       // Convert search input to lower case for case-insensitive comparison
       const searchQuery = this.searchInput.toLowerCase();
@@ -123,12 +200,10 @@ export default {
     },
     applyFilter() {
       if (this.selectedTypes.length === 0) {
-        // Show all pokemons if no type is selected
         this.pokemons = this.allPokemons;
       } else {
-        // Filter by selected types
         this.pokemons = this.allPokemons.filter(pokemon =>
-            this.selectedTypes.every(type => pokemon.types.includes(type))
+            pokemon.types.some(type => this.selectedTypes.includes(type))
         );
       }
     },
@@ -138,7 +213,7 @@ export default {
 
       if (!pokemonsData) { //!pokemonsData um nicht die api zu callen
         try {
-          const response = await axios.get('https://pokeapi.co/api/v2/pokemon?limit=5');
+          const response = await axios.get('https://pokeapi.co/api/v2/pokemon?limit=600');
           const pokemonData = response.data.results;
 
           const pokemonDetails = await Promise.all(
@@ -194,7 +269,11 @@ export default {
     async fetchPokemonTypes() {
       try {
         const response = await axios.get('https://pokeapi.co/api/v2/type');
-        this.pokemonTypes = response.data.results.map(type => type.name);
+        this.pokemonTypes2 = response.data.results.map(type => type.name);
+        // Print the result to the console
+        console.log('TEST START');
+        console.log(this.pokemonTypes2);
+        console.log('TEST ENDE');
       } catch (error) {
         console.error('Error fetching Pokémon types:', error);
       }
@@ -229,6 +308,12 @@ main {
 
 .jump-animation {
   animation: jump 0.5s ease-in-out infinite;
+}
+
+.type-icon {
+  height: 20px; /* Adjust as needed */
+  width: 20px;  /* Adjust as needed */
+  margin-right: 5px;
 }
 
 .pokemon-list {
