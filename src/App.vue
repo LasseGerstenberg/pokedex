@@ -1,10 +1,18 @@
-
 <template>
-  <div id="app">
     <header>
-      <img src="@/assets/pokeball.png" alt="Pokeball" class="pokeball-icon" />
-      <h1>WINGS Pokedex</h1>
-      <button id="header-button"></button>
+      <nav class="navbar navbar-dark  bg-primary">
+        <div class="container-fluid">
+          <img src="@/assets/pokeball.png" class="navbar-icon"/>
+          <form class="d-flex input-group w-auto">
+            <input
+                type="search"
+                class="form-control rounded"
+                :placeholder="searchLabel"
+                aria-label="Search"
+            />
+          </form>
+        </div>
+      </nav>
     </header>
     <main>
       <div class="pokemon-list">
@@ -26,20 +34,19 @@
         </div>
       </div>
     </main>
-  </div>
 </template>
-
 <script>
 import axios from 'axios';
 
 export default {
   name: 'App',
   data() {
-    return {
+    return { //hier variablen anlegen key für language anlegen this. neue sprache zuweisen. vue.js ist reactiv ändert alle vorkommen im code, wo variablen referenziert
       pokemons: [],
+      searchLabel: 'search'
     };
   },
-  async mounted() {
+  async mounted() { //Lifecyclehook
     await this.getPokemon();
   },
   methods: {
@@ -72,13 +79,7 @@ export default {
 };
 </script>
 
-<style>
-#app {
-  min-height: 100vh; /* Ensures that the app covers at least the full viewport height */
-  width: 100vw; /* Ensures that the app covers the full viewport width */
-  display: flex;
-  flex-direction: column; /* This will help in structuring the header and main content */
-}
+<style> // evtl noch scoped, dann gilt es nur für Komponente
 
 body {
   font-family: 'Arial', sans-serif;
@@ -88,44 +89,16 @@ body {
   color: #333;
 }
 
-header {
-  background-color: #ffcc00;
-  color: #fff;
+#app {
+  min-height: 100vh;
+  min-width: 100vw;
   display: flex;
-  align-items: center;
-  justify-content: space-between; /* Adjusts space between elements inside header */
-  padding: 10px 20px;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-}
-
-#header-button {
-  background-image: url('@/assets/german_flag.png'); /* Replace with your image path */
-  background-size: cover;
-  border: none; /* Removes the default button border */
-  cursor: pointer; /* Changes the cursor to indicate it's clickable */
-  height: 40px; /* Set your desired height */
-  width: 40px; /* Set your desired width */
-}
-
-.pokeball-icon {
-  height: 40px;
-  margin-right: 10px;
-}
-
-
-header h1 {
-  margin: 0;
-  color: #fff;
+  flex-direction: column;
 }
 
 main {
   padding-top: 70px; /* Adjust this value based on your header's height */
-  padding: 100px;
+
 }
 
 .pokemon-list {
@@ -165,15 +138,8 @@ main {
   font-size: 0.9em;
 }
 
-@media (max-width: 768px) {
-  .pokemon-card {
-    width: calc(50% - 20px);
-  }
+.navbar-icon {
+  max-height: 50px;
 }
 
-@media (max-width: 480px) {
-  .pokemon-card {
-    width: 100%;
-  }
-}
 </style>
