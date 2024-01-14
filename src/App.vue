@@ -3,9 +3,6 @@
     <nav class="navbar navbar-dark bg-primary">
       <div class="container-fluid">
         <img src="@/assets/pokeball.png" class="navbar-icon"/>
-        <button class="btn btn-secondary" @click="toggleLanguage">
-          Switch Language ({{ currentLanguage.toUpperCase() }})
-        </button>
         <form class="d-flex input-group w-auto">
           <input
               type="search"
@@ -20,7 +17,7 @@
         <!-- Dropdown for filtering by type -->
         <div class="dropdown">
           <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-            Filter by Type
+            {{filterLabel}}
           </button>
           <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
             <li v-for="type in pokemonTypes2" :key="type">
@@ -30,9 +27,12 @@
               </a>
             </li>
           </ul>
-          <button class="btn btn-primary" @click="applyFilter">Apply Filter</button>
+          <button class="btn btn-primary" @click="applyFilter">{{applyFilterLabel}}</button>
         </div>
-        <button class="btn btn-warning" @click="resetFilter">Reset Filter</button>
+        <button class="btn-flag" @click="toggleLanguage">
+          <img :src="currentFlag" class="navbar-icon" alt="Flag Icon" />
+        </button>
+        <button class="btn btn-warning" @click="resetFilter">{{resetFilterLabel}}</button>
       </div>
     </nav>
   </header>
@@ -93,18 +93,25 @@ import RockIcon from '@/assets/Rock_icon.png';
 import SteelIcon from '@/assets/Steel_icon.png';
 import WaterIcon from '@/assets/Water_icon.png';
 import QuestionMarkIcon from '@/assets/question_mark.png'
+import FlagEN from '@/assets/EN.png'
+import FlagDE from '@/assets/DE.png'
+import FlagJP from '@/assets/JP.png'
 
 export default {
   name: 'App',
   data() {
     return { //hier variablen anlegen key für language anlegen this. neue sprache zuweisen. vue.js ist reactiv ändert alle vorkommen im code, wo variablen referenziert
       currentLanguage: 'en',
+      currentFlag: FlagEN,
       pokemons: [],
       allPokemons: [],
       selectedTypes: [],
       foundPokemonNumber: null,
       searchInput: '',
-      searchLabel: 'search',
+      searchLabel: 'search...',
+      filterLabel: 'Filter by Type',
+      applyFilterLabel: 'Apply Filter',
+      resetFilterLabel: 'Reset Filter',
       pokemonTypes2: [],
       pokemonTypes: [
         { name: 'bug', icon: BugIcon },
@@ -136,10 +143,25 @@ export default {
     toggleLanguage() {
       if (this.currentLanguage === 'en') {
         this.currentLanguage = 'de';
+        this.currentFlag = FlagDE;
+        this.searchLabel = 'Suchen...';
+        this.filterLabel = 'Filtern nach Typ';
+        this.applyFilterLabel = 'Filter anwenden';
+        this.resetFilterLabel = 'Filter zurücksetzen';
       } else if (this.currentLanguage === 'de') {
         this.currentLanguage = 'jp';
+        this.currentFlag = FlagJP;
+        this.searchLabel = '検索...';
+        this.filterLabel = 'タイプ別にフィルター';
+        this.applyFilterLabel = 'フィルターを適用する';
+        this.resetFilterLabel = 'フィルターをリセットする';
       } else {
         this.currentLanguage = 'en';
+        this.currentFlag = FlagEN;
+        this.searchLabel = 'search...';
+        this.filterLabel = 'Filter by Type';
+        this.applyFilterLabel = 'Apply Filter';
+        this.resetFilterLabel = 'Reset Filter';
       }
     },
     findTypeIcon(typeName) {
@@ -326,6 +348,11 @@ main {
   background-color: #E0FFFF; /* Lighter background for highlighting */
 }
 
+.btn-flag {
+  background: transparent;
+  border: transparent;
+}
+
 .pokemon-card {
   background-color: rgba(199, 199, 199, 0.16);
   border-radius: 10px;
@@ -358,7 +385,7 @@ main {
 }
 
 .navbar-icon {
-  max-height: 50px;
+  max-height: 27px;
 }
 
 </style>
