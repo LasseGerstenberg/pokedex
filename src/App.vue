@@ -101,6 +101,10 @@ export default {
   name: 'App',
   data() {
     return { //hier variablen anlegen key für language anlegen this. neue sprache zuweisen. vue.js ist reactiv ändert alle vorkommen im code, wo variablen referenziert
+      pokeApiCurrentLanguage: 5,
+      pokeApiLanguageDe: 5,
+      pokeApiLanguageEn: 8,
+      pokeApiLanguageJp: 9,
       currentLanguage: 'en',
       currentFlag: FlagEN,
       pokemons: [],
@@ -144,29 +148,34 @@ export default {
       if (this.currentLanguage === 'en') {
         this.currentLanguage = 'de';
         this.currentFlag = FlagDE;
+        this.pokeApiCurrentLanguage = this.pokeApiLanguageDe;
         this.searchLabel = 'Suchen...';
         this.filterLabel = 'Filtern nach Typ';
         this.applyFilterLabel = 'Filter anwenden';
         this.resetFilterLabel = 'Filter zurücksetzen';
+        this.setLanguageForPokemonCards();
       } else if (this.currentLanguage === 'de') {
         this.currentLanguage = 'jp';
         this.currentFlag = FlagJP;
+        this.pokeApiCurrentLanguage = this.pokeApiLanguageJp;
         this.searchLabel = '検索...';
         this.filterLabel = 'タイプ別にフィルター';
         this.applyFilterLabel = 'フィルターを適用する';
         this.resetFilterLabel = 'フィルターをリセットする';
+        this.setLanguageForPokemonCards();
       } else {
         this.currentLanguage = 'en';
         this.currentFlag = FlagEN;
+        this.pokeApiCurrentLanguage = this.pokeApiLanguageEn;
         this.searchLabel = 'search...';
         this.filterLabel = 'Filter by Type';
         this.applyFilterLabel = 'Apply Filter';
         this.resetFilterLabel = 'Reset Filter';
+        this.setLanguageForPokemonCards();
       }
     },
     findTypeIcon(typeName) {
       //haesslich aber Array iterieren klappt aus unerfindlichen Gruenden nicht :'(
-      console.log(typeName);
       if(typeName === "bug") return BugIcon;
       if(typeName === "dark") return DarkIcon;
       if(typeName === "dragon") return DragonIcon;
@@ -216,10 +225,6 @@ export default {
       this.searchInput = '';
       this.foundPokemonNumber = null; // Clear the found Pokémon
     },
-    // Call this method when a new search is performed
-    clearSearch() {
-      this.foundPokemonNumber = null;
-    },
     applyFilter() {
       if (this.selectedTypes.length === 0) {
         this.pokemons = this.allPokemons;
@@ -228,6 +233,39 @@ export default {
             pokemon.types.some(type => this.selectedTypes.includes(type))
         );
       }
+    },
+    setLanguageForPokemonCards() {
+      this.pokemons.forEach(pokemon => {
+        this.fetchLanguageData(pokemon.number)
+            .then(data => {
+                pokemon.name = data.names[this.pokeApiCurrentLanguage].name
+                console.log(data.names[this.pokeApiCurrentLanguage].name);
+            })
+            .catch(error => {
+              console.error('Error in setLanguageForPokemonCards:', error);
+            });
+      });
+    },
+    fetchLanguageData(id) {
+      const apiUrl = `https://pokeapi.co/api/v2/pokemon-species/${id}/`;
+      const localStorageKey = `pokemonLanguageData_${id}`;
+
+      // Check if the data is already in local storage
+      const cachedData = localStorage.getItem(localStorageKey);
+      if (cachedData) {
+        console.log("API WAS NOT USED");
+        return Promise.resolve(JSON.parse(cachedData));
+      }
+
+      // Fetch from API and store in local storage
+      return axios.get(apiUrl)
+          .then(response => {
+            localStorage.setItem(localStorageKey, JSON.stringify(response.data));
+            return response.data;
+          })
+          .catch(error => {
+            console.error('Error fetching language data:', error);
+          })
     },
     async getPokemon() {
       const localStorageKey = 'pokemonsData';
@@ -293,9 +331,9 @@ export default {
         const response = await axios.get('https://pokeapi.co/api/v2/type');
         this.pokemonTypes2 = response.data.results.map(type => type.name);
         // Print the result to the console
-        console.log('TEST START');
-        console.log(this.pokemonTypes2);
-        console.log('TEST ENDE');
+        //console.log('TEST START');
+        //console.log(this.pokemonTypes2);
+        //console.log('TEST ENDE');
       } catch (error) {
         console.error('Error fetching Pokémon types:', error);
       }
