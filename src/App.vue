@@ -41,19 +41,25 @@ const { t } = useI18n();
       </div>
     </nav>
   </header>
-    <main>
-      <div class="pokemon-list">
-        <div v-for="pokemon in pokemons" :key="pokemon.name" class="pokemon-card" :id="`pokemon-${pokemon.number}`" :class="{ 'highlighted': pokemon.number === foundPokemonNumber }">
-          <button class="catch-button" :class="{ 'catched': catchedPokemons[pokemon.number] }" @click="toggleCatched(pokemon.number)">
-            {{ catchedPokemons[pokemon.number] ? 'Caught' : 'Catch' }}
-          </button>
-          <h2>{{ pokemon.name }}</h2>
-          <img :src="pokemon.image" :alt="pokemon.name" :class="{ 'jump-animation': pokemon.number === foundPokemonNumber }" />
-          <div class="pokemon-details">
-            <p><strong>{{ t('type') }}:</strong>
-              <span v-for="type in pokemon.types" :key="type">
-              <img :src="findTypeIcon(type)" class="type-icon" alt="Type Icon" /> {{ type }}
-            </span>
+  <main>
+    <div class="pokemon-list">
+      <div v-for="pokemon in pokemons" :key="pokemon.name" class="pokemon-card" :id="`pokemon-${pokemon.number}`" :class="{ 'highlighted': pokemon.number === foundPokemonNumber }">
+        <h2>{{ pokemon.name }}</h2>
+        <div class="card-content">
+          <div class="pokeball-button-container">
+            <img src="@/assets/pokeball.png" class="pokeball-button" @click="onPokeballClick(pokemon)" />
+            <img src="@/assets/fernglas.png" class="pokeball-button" @click="onPokeballClick(pokemon)" />
+            <img src="@/assets/shiny.png" class="pokeball-button" @click="onPokeballClick(pokemon)" />
+          </div>
+          <img :src="pokemon.image" :alt="pokemon.name" class="pokemon-image" />
+        </div>
+        <div class="pokemon-details">
+          <p><strong>{{ t('type') }}:</strong>
+            <div class="type-container">
+      <span v-for="type in pokemon.types" :key="type">
+        <img :src="findTypeIcon(type)" class="type-icon" alt="Type Icon" /> {{ type }}
+      </span>
+            </div>
             </p>
             <div class="pokemon-details-grid">
               <div><strong>{{ t('number') }}:</strong> {{ pokemon.number }}</div>
@@ -118,7 +124,6 @@ export default {
       selectedTypes: [],
       foundPokemonNumber: null,
       searchInput: '',
-      catchedPokemons: JSON.parse(localStorage.getItem('catchedPokemons')) || {},
       pokemonTypes2: [],
       pokemonTypes: [
         { name: 'bug', icon: BugIcon },
@@ -286,7 +291,6 @@ export default {
                     weight: detailResponse.data.weight,
                   },
                   stats: detailResponse.data.stats,
-                  moves: randomMoves,
                   types,
                   number,
                   region,
@@ -323,10 +327,6 @@ export default {
     },
     capitalizeFirstLetter(string) {
       return string.charAt(0).toUpperCase() + string.slice(1);
-    },
-    toggleCatched(number) {
-      this.$set(this.catchedPokemons, number, !this.catchedPokemons[number]);
-      localStorage.setItem('catchedPokemons', JSON.stringify(this.catchedPokemons));
     },
     async fetchPokemonTypes() {
       try {
@@ -394,6 +394,9 @@ main {
 }
 
 .pokemon-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   background-color: rgba(199, 199, 199, 0.16);
   border-radius: 10px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -407,6 +410,9 @@ main {
   max-width: 100px;
   height: auto;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .pokemon-details {
@@ -446,20 +452,36 @@ main {
   margin-top: 10px;
 }
 
-.catch-button {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background-color: lightgray;
-  border: none;
-  border-radius: 5px;
-  padding: 5px 10px;
-  cursor: pointer;
+.pokeball-button {
+  top: 10px; /* Adjust as needed */
+  left: 10px; /* Adjust as needed */
+  width: 30px; /* Adjust size as needed */
+  height: auto;
+  cursor: pointer; /* To indicate it's clickable */
+  z-index: 10; /* To ensure it's above other elements */
+  filter: grayscale(100%);
+}
+.pokeball-button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-right: 20px; /* Space between buttons and the image */
+  padding-left: 20px; /* Increase this value to push buttons more to the left */
+}
+.card-content {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* Align children to the start of the container */
+  width: 100%; /* Ensure the content stretches to full width of the card */
 }
 
-.catch-button.catched {
-  background-color: green;
-  color: white;
+.type-container {
+  display: flex; /* Enables flexbox */
+  flex-wrap: nowrap; /* Prevents wrapping to a new line */
+  align-items: center; /* Aligns items vertically */
+  gap: 5px; /* Adjust the spacing between each type icon and label */
+  justify-content: start; /* Aligns items to the start of the container */
 }
 
 </style>
