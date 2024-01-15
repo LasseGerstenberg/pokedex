@@ -1,0 +1,22 @@
+{
+  "currentLanguage": "en",
+  "currentFlag": "FlagEN",
+  "pokeApiCurrentLanguage": 8,
+  "searchLabel": "search...",
+  "filterLabel": "Filter by Type",
+  "applyFilterLabel": "Apply Filter",
+  "resetFilterLabel": "Reset Filter",
+  "height": "Height",
+  "weight": "Weight",
+  "type": "Type",
+  "number": "Number",
+  "region": "Region",
+  "moves": "Moves",
+  "stats": "Stats",
+  "hp": "hp",
+  "attack": "attack",
+  "defense": "defense",
+  "special-attack": "special-attack",
+  "special-defense": "special-defense",
+  "speed": "speed"
+}

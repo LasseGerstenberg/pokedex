@@ -1,13 +1,18 @@
+<script setup>
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
+</script>
+
 <template>
   <header>
     <nav class="navbar navbar-dark bg-primary">
       <div class="container-fluid">
-        <img src="@/assets/pokeball.png" class="navbar-icon"/>
+        <img src="@/assets/pokeball.png" class="navbar-icon" @click="clearLocalStorage"/>
         <form class="d-flex input-group w-auto">
           <input
               type="search"
               class="form-control rounded"
-              :placeholder="searchLabel"
+              :placeholder="t('searchLabel')"
               aria-label="Search"
               v-model="searchInput"
               @keyup.enter="scrollToPokemon"
@@ -17,7 +22,7 @@
         <!-- Dropdown for filtering by type -->
         <div class="dropdown">
           <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-            {{filterLabel}}
+            {{ t('filterLabel') }}
           </button>
           <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
             <li v-for="type in pokemonTypes2" :key="type">
@@ -27,43 +32,43 @@
               </a>
             </li>
           </ul>
-          <button class="btn btn-primary" @click="applyFilter">{{applyFilterLabel}}</button>
+          <button class="btn btn-primary" @click="applyFilter">{{ t('applyFilterLabel') }}</button>
         </div>
         <button class="btn-flag" @click="toggleLanguage">
           <img :src="currentFlag" class="navbar-icon" alt="Flag Icon" />
         </button>
-        <button class="btn btn-warning" @click="resetFilter">{{resetFilterLabel}}</button>
+        <button class="btn btn-warning" @click="resetFilter">{{t('resetFilterLabel')}}</button>
       </div>
     </nav>
   </header>
     <main>
       <div class="pokemon-list">
         <div v-for="pokemon in pokemons" :key="pokemon.name" class="pokemon-card" :id="`pokemon-${pokemon.number}`" :class="{ 'highlighted': pokemon.number === foundPokemonNumber }">
+          <button class="catch-button" :class="{ 'catched': catchedPokemons[pokemon.number] }" @click="toggleCatched(pokemon.number)">
+            {{ catchedPokemons[pokemon.number] ? 'Caught' : 'Catch' }}
+          </button>
           <h2>{{ pokemon.name }}</h2>
           <img :src="pokemon.image" :alt="pokemon.name" :class="{ 'jump-animation': pokemon.number === foundPokemonNumber }" />
           <div class="pokemon-details">
-            <p><strong>Height:</strong> {{ pokemon.details.height }}</p>
-            <p><strong>Weight:</strong> {{ pokemon.details.weight }}</p>
-            <p><strong>Type:</strong>
+            <p><strong>{{ t('type') }}:</strong>
               <span v-for="type in pokemon.types" :key="type">
               <img :src="findTypeIcon(type)" class="type-icon" alt="Type Icon" /> {{ type }}
             </span>
             </p>
-            <p><strong>Number:</strong> {{ pokemon.number }}</p>
-            <p><strong>Region:</strong> {{ pokemon.region }}</p>
-            <div class="pokemon-moves">
-              <h3>Moves:</h3>
-              <ul>
-                <li v-for="move in pokemon.moves" :key="move">{{ move }}</li>
-              </ul>
+            <div class="pokemon-details-grid">
+              <div><strong>{{ t('number') }}:</strong> {{ pokemon.number }}</div>
+              <div><strong>{{ t('region') }}:</strong> {{ pokemon.region }}</div>
+              <div><strong>{{ t('height') }}:</strong> {{ pokemon.details.height }}</div>
+              <div><strong>{{ t('weight') }}:</strong> {{ pokemon.details.weight }}</div>
             </div>
             <div class="pokemon-stats">
-              <h3>Stats:</h3>
-              <ul>
-                <li v-for="stat in pokemon.stats" :key="stat.stat.name">
-                  {{ stat.stat.name }}: {{ stat.base_stat }}
-                </li>
-              </ul>
+              <h3>{{ t('stats') }}:</h3>
+              <div><strong>{{ t('hp') }}:</strong> {{ pokemon.stats[0].base_stat }}</div>
+              <div><strong>{{ t('attack') }}:</strong> {{ pokemon.stats[1].base_stat }}</div>
+              <div><strong>{{ t('defense') }}:</strong> {{ pokemon.stats[2].base_stat }}</div>
+              <div><strong>{{ t('special-attack') }}:</strong> {{ pokemon.stats[3].base_stat }}</div>
+              <div><strong>{{ t('special-defense') }}:</strong> {{ pokemon.stats[4].base_stat }}</div>
+              <div><strong>{{ t('speed') }}:</strong> {{ pokemon.stats[5].base_stat }}</div>
             </div>
           </div>
         </div>
@@ -96,6 +101,7 @@ import QuestionMarkIcon from '@/assets/question_mark.png'
 import FlagEN from '@/assets/EN.png'
 import FlagDE from '@/assets/DE.png'
 import FlagJP from '@/assets/JP.png'
+import {useI18n} from "vue-i18n";
 
 export default {
   name: 'App',
@@ -105,17 +111,14 @@ export default {
       pokeApiLanguageDe: 5,
       pokeApiLanguageEn: 8,
       pokeApiLanguageJp: 9,
-      currentLanguage: 'en',
       currentFlag: FlagEN,
+      currentLanguage: 'en',
       pokemons: [],
       allPokemons: [],
       selectedTypes: [],
       foundPokemonNumber: null,
       searchInput: '',
-      searchLabel: 'search...',
-      filterLabel: 'Filter by Type',
-      applyFilterLabel: 'Apply Filter',
-      resetFilterLabel: 'Reset Filter',
+      catchedPokemons: JSON.parse(localStorage.getItem('catchedPokemons')) || {},
       pokemonTypes2: [],
       pokemonTypes: [
         { name: 'bug', icon: BugIcon },
@@ -146,33 +149,25 @@ export default {
   methods: {
     toggleLanguage() {
       if (this.currentLanguage === 'en') {
+        this.$i18n.locale = 'de';
         this.currentLanguage = 'de';
         this.currentFlag = FlagDE;
-        this.pokeApiCurrentLanguage = this.pokeApiLanguageDe;
-        this.searchLabel = 'Suchen...';
-        this.filterLabel = 'Filtern nach Typ';
-        this.applyFilterLabel = 'Filter anwenden';
-        this.resetFilterLabel = 'Filter zurücksetzen';
-        this.setLanguageForPokemonCards();
+        this.handlePokemonTranslation(this.pokeApiLanguageDe);
       } else if (this.currentLanguage === 'de') {
+        this.$i18n.locale = 'jp'
         this.currentLanguage = 'jp';
         this.currentFlag = FlagJP;
-        this.pokeApiCurrentLanguage = this.pokeApiLanguageJp;
-        this.searchLabel = '検索...';
-        this.filterLabel = 'タイプ別にフィルター';
-        this.applyFilterLabel = 'フィルターを適用する';
-        this.resetFilterLabel = 'フィルターをリセットする';
-        this.setLanguageForPokemonCards();
+        this.handlePokemonTranslation(this.pokeApiLanguageJp);
       } else {
+        this.$i18n.locale = 'en'
         this.currentLanguage = 'en';
         this.currentFlag = FlagEN;
-        this.pokeApiCurrentLanguage = this.pokeApiLanguageEn;
-        this.searchLabel = 'search...';
-        this.filterLabel = 'Filter by Type';
-        this.applyFilterLabel = 'Apply Filter';
-        this.resetFilterLabel = 'Reset Filter';
-        this.setLanguageForPokemonCards();
+        this.handlePokemonTranslation(this.pokeApiLanguageEn);
       }
+    },
+    handlePokemonTranslation(pokeApiLanguage) {
+      this.pokeApiCurrentLanguage = pokeApiLanguage;
+      this.setLanguageForPokemonCards(pokeApiLanguage);
     },
     findTypeIcon(typeName) {
       //haesslich aber Array iterieren klappt aus unerfindlichen Gruenden nicht :'(
@@ -271,16 +266,14 @@ export default {
       const localStorageKey = 'pokemonsData';
       let pokemonsData = localStorage.getItem(localStorageKey);
 
-      if (!pokemonsData) { //!pokemonsData um nicht die api zu callen
+      if (!pokemonsData) {
         try {
-          const response = await axios.get('https://pokeapi.co/api/v2/pokemon?limit=600');
+          const response = await axios.get('https://pokeapi.co/api/v2/pokemon?limit=30');
           const pokemonData = response.data.results;
 
           const pokemonDetails = await Promise.all(
               pokemonData.map(async (pokemon) => {
                 const detailResponse = await axios.get(pokemon.url);
-                const moves = detailResponse.data.moves.map(m => m.move.name);
-                const randomMoves = moves.sort(() => 0.5 - Math.random()).slice(0, 4);
                 const types = detailResponse.data.types.map(t => t.type.name);
                 const number = detailResponse.data.id; // Pokedex number
                 const region = this.determineRegion(number);
@@ -323,8 +316,17 @@ export default {
       if (number >= 810) return 'Galar';
       return 'Unknown'; // For numbers that don't fall into any category
     },
+    clearLocalStorage() {
+      localStorage.clear();
+      console.log('Local storage cleared');
+      this.resetFilter();
+    },
     capitalizeFirstLetter(string) {
       return string.charAt(0).toUpperCase() + string.slice(1);
+    },
+    toggleCatched(number) {
+      this.$set(this.catchedPokemons, number, !this.catchedPokemons[number]);
+      localStorage.setItem('catchedPokemons', JSON.stringify(this.catchedPokemons));
     },
     async fetchPokemonTypes() {
       try {
@@ -424,6 +426,40 @@ main {
 
 .navbar-icon {
   max-height: 27px;
+}
+
+.pokemon-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.pokemon-details-grid > div {
+  text-align: left;
+}
+
+.pokemon-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.catch-button {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: lightgray;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.catch-button.catched {
+  background-color: green;
+  color: white;
 }
 
 </style>

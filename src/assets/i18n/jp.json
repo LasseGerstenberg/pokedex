@@ -1,0 +1,22 @@
+{
+  "currentLanguage": "jp",
+  "currentFlag": "FlagJP",
+  "pokeApiCurrentLanguage": 9,
+  "searchLabel": "検索...",
+  "filterLabel": "タイプ別にフィルター",
+  "applyFilterLabel": "フィルターを適用する",
+  "resetFilterLabel": "フィルターをリセットする",
+  "height": "高さ",
+  "weight": "重さ",
+  "type": "タイプ",
+  "number": "番号",
+  "region": "地域",
+  "moves": "地域",
+  "stats": "統計",
+  "hp": "エイチピー",
+  "attack": "攻撃",
+  "defense": "防御",
+  "special-attack": "特殊攻撃",
+  "special-defense": "特殊防御",
+  "speed": "速さ"
+}
