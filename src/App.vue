@@ -8,16 +8,15 @@ const { t } = useI18n();
     <nav class="navbar navbar-dark bg-primary">
       <div class="container-fluid">
         <img src="@/assets/pokeball.png" class="navbar-icon" @click="clearLocalStorage"/>
-        <form class="d-flex input-group w-auto">
+        <form class="d-flex input-group w-auto" @submit.prevent="scrollToPokemon(searchInput)">
           <input
               type="search"
               class="form-control rounded"
               :placeholder="t('searchLabel')"
               aria-label="Search"
               v-model="searchInput"
-              @keyup.enter="scrollToPokemon"
+              @keyup.enter="scrollToPokemon(searchInput)"
           />
-          <!-- @input fuer Suche mit Enter -->
         </form>
         <!-- Dropdown for filtering by type -->
         <div class="dropdown">
@@ -25,10 +24,10 @@ const { t } = useI18n();
             {{ t('filterLabel') }}
           </button>
           <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-            <li v-for="type in pokemonTypes2" :key="type">
+            <li v-for="type in getTypesByLanguage()" :key="type">
               <a class="dropdown-item" href="#">
-                <img :src="findTypeIcon(type)" class="type-icon" alt="Type Icon" />
-                <input type="checkbox" :value="type" v-model="selectedTypes"> {{type}}
+                <img :src="findTypeIcon(convertTypeNameToEnglish(type))" class="type-icon" alt="Type Icon" />
+                <input type="checkbox" :value="convertTypeNameToEnglish(type)" v-model="selectedTypes"> {{ type }}
               </a>
             </li>
           </ul>
@@ -43,7 +42,7 @@ const { t } = useI18n();
   </header>
   <main>
     <div class="pokemon-list">
-      <div v-for="pokemon in pokemons" :key="pokemon.name" class="pokemon-card" :id="`pokemon-${pokemon.number}`" :class="{ 'highlighted': pokemon.number === foundPokemonNumber }">
+      <div v-for="pokemon in pokemons" :key="pokemon.name" class="pokemon-card" :id="`pokemon-${pokemon.number}`" :class="{ 'highlighted': pokemon.number === foundPokemonNumber}">
         <h2>{{ pokemon.name }}</h2>
         <div class="card-content">
           <div class="pokeball-button-container">
@@ -51,13 +50,13 @@ const { t } = useI18n();
             <img src="@/assets/fernglas.png" class="pokeball-button" @click="onPokeballClick(pokemon)" />
             <img src="@/assets/shiny.png" class="pokeball-button" @click="onPokeballClick(pokemon)" />
           </div>
-          <img :src="pokemon.image" :alt="pokemon.name" class="pokemon-image" />
+          <img :src="pokemon.image" :alt="pokemon.name" class="pokemon-image" :class="{ 'jump-animation': pokemon.number === foundPokemonNumber }" />
         </div>
         <div class="pokemon-details">
           <p><strong>{{ t('type') }}:</strong>
             <div class="type-container">
       <span v-for="type in pokemon.types" :key="type">
-        <img :src="findTypeIcon(type)" class="type-icon" alt="Type Icon" /> {{ type }}
+        <img :src="findTypeIcon(convertTypeNameToEnglish(type))" class="type-icon" alt="Type Icon" /> {{ getTypeByLanguage(type) }}
       </span>
             </div>
             </p>
@@ -79,8 +78,6 @@ const { t } = useI18n();
           </div>
         </div>
       </div>
-
-
     </main>
 </template>
 <script>
@@ -111,6 +108,13 @@ import {useI18n} from "vue-i18n";
 
 export default {
   name: 'App',
+  watch: {
+    searchInput(newVal) {
+      if (newVal === '') {
+        this.foundPokemonNumber = null;
+      }
+    }
+  },
   data() {
     return { //hier variablen anlegen key für language anlegen this. neue sprache zuweisen. vue.js ist reactiv ändert alle vorkommen im code, wo variablen referenziert
       pokeApiCurrentLanguage: 5,
@@ -145,6 +149,7 @@ export default {
         { name: 'steel', icon: SteelIcon },
         { name: 'water', icon: WaterIcon },
       ],
+      pokemonTypesWithTranslations: []
     };
   },
   async mounted() { //Lifecyclehook
@@ -176,46 +181,47 @@ export default {
     },
     findTypeIcon(typeName) {
       //haesslich aber Array iterieren klappt aus unerfindlichen Gruenden nicht :'(
-      if(typeName === "bug") return BugIcon;
-      if(typeName === "dark") return DarkIcon;
-      if(typeName === "dragon") return DragonIcon;
-      if(typeName === "electric") return ElectricIcon;
-      if(typeName === "fairy") return FairyIcon;
-      if(typeName === "fighting") return FightingIcon;
-      if(typeName === "fire") return FireIcon;
-      if(typeName === "flying") return FlyingIcon;
-      if(typeName === "ghost") return GhostIcon;
-      if(typeName === "grass") return GrassIcon;
-      if(typeName === "ground") return GroundIcon;
-      if(typeName === "ice") return IceIcon;
-      if(typeName === "normal") return NormalIcon;
-      if(typeName === "poison") return PoisonIcon;
-      if(typeName === "psychic") return PsychicIcon;
-      if(typeName === "rock") return RockIcon;
-      if(typeName === "steel") return SteelIcon;
-      if(typeName === "water") return WaterIcon;
+      if(typeName === "Bug") return BugIcon;
+      if(typeName === "Dark") return DarkIcon;
+      if(typeName === "Dragon") return DragonIcon;
+      if(typeName === "Electric") return ElectricIcon;
+      if(typeName === "Fairy") return FairyIcon;
+      if(typeName === "Fighting") return FightingIcon;
+      if(typeName === "Fire") return FireIcon;
+      if(typeName === "Flying") return FlyingIcon;
+      if(typeName === "Ghost") return GhostIcon;
+      if(typeName === "Grass") return GrassIcon;
+      if(typeName === "Ground") return GroundIcon;
+      if(typeName === "Ice") return IceIcon;
+      if(typeName === "Normal") return NormalIcon;
+      if(typeName === "Poison") return PoisonIcon;
+      if(typeName === "Psychic") return PsychicIcon;
+      if(typeName === "Rock") return RockIcon;
+      if(typeName === "Steel") return SteelIcon;
+      if(typeName === "Water") return WaterIcon;
       return QuestionMarkIcon;
     },
-    scrollToPokemon() {
-      // Convert search input to lower case for case-insensitive comparison
-      const searchQuery = this.searchInput.toLowerCase();
+    scrollToPokemon(inputValue) {
+      const searchQuery = inputValue.toLowerCase();
 
-      // Find the first Pokémon that matches the name or number
       const foundPokemon = this.pokemons.find(pokemon =>
-          pokemon.name.toLowerCase() === searchQuery || pokemon.number.toString() === searchQuery
+          pokemon.name.toLowerCase() === searchQuery ||
+          pokemon.number.toString() === searchQuery
       );
 
       if (foundPokemon) {
         this.foundPokemonNumber = foundPokemon.number;
 
-        // Scroll to the Pokémon card
         this.$nextTick(() => {
           const element = document.getElementById(`pokemon-${foundPokemon.number}`);
           if (element) {
             element.scrollIntoView({ behavior: 'smooth' });
+          } else {
+            console.error('Element to scroll to not found');
           }
         });
       } else {
+        console.log('Pokemon not found');
         this.foundPokemonNumber = null;
       }
     },
@@ -230,7 +236,9 @@ export default {
         this.pokemons = this.allPokemons;
       } else {
         this.pokemons = this.allPokemons.filter(pokemon =>
-            pokemon.types.some(type => this.selectedTypes.includes(type))
+            pokemon.types.some(type =>
+                this.selectedTypes.includes(this.convertTypeNameToEnglish(type))
+            )
         );
       }
     },
@@ -239,7 +247,6 @@ export default {
         this.fetchLanguageData(pokemon.number)
             .then(data => {
                 pokemon.name = data.names[this.pokeApiCurrentLanguage].name
-                console.log(data.names[this.pokeApiCurrentLanguage].name);
             })
             .catch(error => {
               console.error('Error in setLanguageForPokemonCards:', error);
@@ -253,7 +260,6 @@ export default {
       // Check if the data is already in local storage
       const cachedData = localStorage.getItem(localStorageKey);
       if (cachedData) {
-        console.log("API WAS NOT USED");
         return Promise.resolve(JSON.parse(cachedData));
       }
 
@@ -273,7 +279,7 @@ export default {
 
       if (!pokemonsData) {
         try {
-          const response = await axios.get('https://pokeapi.co/api/v2/pokemon?limit=30');
+          const response = await axios.get('https://pokeapi.co/api/v2/pokemon?limit=10');
           const pokemonData = response.data.results;
 
           const pokemonDetails = await Promise.all(
@@ -328,18 +334,71 @@ export default {
     capitalizeFirstLetter(string) {
       return string.charAt(0).toUpperCase() + string.slice(1);
     },
-    async fetchPokemonTypes() {
-      try {
-        const response = await axios.get('https://pokeapi.co/api/v2/type');
-        this.pokemonTypes2 = response.data.results.map(type => type.name);
-        // Print the result to the console
-        //console.log('TEST START');
-        //console.log(this.pokemonTypes2);
-        //console.log('TEST ENDE');
-      } catch (error) {
-        console.error('Error fetching Pokémon types:', error);
+    // Sucht aus dem Array mit allen Uebersetzungen das Objekt passend zum Typ und aus diesem dann die richtige Sprache
+    // relevant fuer die einzelnen Pokemon
+    getTypeByLanguage(type) {
+      type = this.capitalizeFirstLetter(type);
+      const typeObject = this.pokemonTypesWithTranslations.find(t => t.nameEN === type);
+      if(this.currentLanguage === 'en') {
+        return type;
+      } else if (this.currentLanguage === 'de'){
+        return typeObject.nameDE;
+      } else if (this.currentLanguage === 'jp'){
+        return typeObject.nameJP;
       }
     },
+    // alle Typen in der aktuellen Sprache. Relevant fuer den Filter
+    getTypesByLanguage() {
+      // Return an array of types based on the current language
+      // The logic here will depend on how your types are stored and how you want to filter them
+
+      if(this.currentLanguage === 'en') {
+        return this.pokemonTypesWithTranslations.map(t => t.nameEN);
+      } else if (this.currentLanguage === 'de'){
+        return this.pokemonTypesWithTranslations.map(t => t.nameDE);
+      } else if (this.currentLanguage === 'jp'){
+        return this.pokemonTypesWithTranslations.map(t => t.nameJP);
+      }
+    },
+    convertTypeNameToEnglish(type) {
+      type = this.capitalizeFirstLetter(type);
+
+      const foundTypeObject = this.pokemonTypesWithTranslations.find(t =>
+          t.nameEN === type || t.nameDE === type || t.nameJP === type
+      );
+      if(foundTypeObject) {
+        return foundTypeObject.nameEN;
+      } else {
+        return type;
+      }
+
+
+    },
+    //fetch all pokemon types and build an array with all translations
+    async fetchPokemonTypes() {
+        if(localStorage.getItem('pokemonTypesWithTranslations')) {
+          this.pokemonTypesWithTranslations = JSON.parse(localStorage.getItem('typesWithTranslations'));
+        } else {
+          const typesWithTranslations = [];
+          const response = await axios.get('https://pokeapi.co/api/v2/type');
+          const types = response.data.results; // Adjusted to access the results
+
+          for (let i = 0; i < types.length; i++) {
+            const singleTypeResponse = await axios.get(types[i].url);
+            const singleTypeMetaData = singleTypeResponse.data.names; // Assuming 'names' is the correct field
+
+            // Find the specific translations you need
+            const nameEN = singleTypeMetaData.find(name => name.language.name === 'en')?.name || 'N/A';
+            const nameDE = singleTypeMetaData.find(name => name.language.name === 'de')?.name || 'N/A';
+            const nameJP = singleTypeMetaData.find(name => name.language.name === 'ja')?.name || 'N/A';
+
+            const typeMetaData = { nameEN, nameDE, nameJP };
+            typesWithTranslations.push(typeMetaData);
+          }
+          this.pokemonTypesWithTranslations = typesWithTranslations;
+          localStorage.setItem('typesWithTranslations', JSON.stringify(typesWithTranslations));
+        }
+      }
   },
 };
 </script>
