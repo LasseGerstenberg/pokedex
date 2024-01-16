@@ -46,9 +46,18 @@ const { t } = useI18n();
         <h2>{{ pokemon.name }}</h2>
         <div class="card-content">
           <div class="pokeball-button-container">
-            <img src="@/assets/pokeball.png" class="pokeball-button" @click="onPokeballClick(pokemon)" />
-            <img src="@/assets/fernglas.png" class="pokeball-button" @click="onPokeballClick(pokemon)" />
-            <img src="@/assets/shiny.png" class="pokeball-button" @click="onPokeballClick(pokemon)" />
+            <img src="@/assets/pokeball.png"
+                 class="pokeball-button"
+                 :class="{ 'grayscale': isGrayscale(pokemon, 'pokeball') }"
+                 @click="onPokeballClick(pokemon, 'pokeball')" />
+            <img src="@/assets/fernglas.png"
+                 class="pokeball-button"
+                 :class="{ 'grayscale': isGrayscale(pokemon, 'fernglas') }"
+                 @click="onPokeballClick(pokemon, 'fernglas')" />
+            <img src="@/assets/shiny.png"
+                 class="pokeball-button"
+                 :class="{ 'grayscale': isGrayscale(pokemon, 'shiny') }"
+                 @click="onPokeballClick(pokemon, 'shiny')" />
           </div>
           <img :src="pokemon.image" :alt="pokemon.name" class="pokemon-image" :class="{ 'jump-animation': pokemon.number === foundPokemonNumber }" />
         </div>
@@ -123,6 +132,7 @@ export default {
       pokeApiLanguageJp: 9,
       currentFlag: FlagEN,
       currentLanguage: 'en',
+      iconStates: {},
       pokemons: [],
       allPokemons: [],
       selectedTypes: [],
@@ -155,6 +165,7 @@ export default {
   async mounted() { //Lifecyclehook
     await this.getPokemon();
     await this.fetchPokemonTypes();
+    this.loadIconStates();
   },
   methods: {
     toggleLanguage() {
@@ -178,6 +189,33 @@ export default {
     handlePokemonTranslation(pokeApiLanguage) {
       this.pokeApiCurrentLanguage = pokeApiLanguage;
       this.setLanguageForPokemonCards(pokeApiLanguage);
+    },
+    onPokeballClick(pokemon, iconType) {
+      const pokemonNumber = pokemon.number;
+      if (!this.iconStates[pokemonNumber]) {
+        this.iconStates[pokemonNumber] = {};
+      }
+
+      this.iconStates[pokemonNumber][iconType] = !this.iconStates[pokemonNumber][iconType];
+      this.saveIconStates();
+    },
+    loadIconStates() {
+      const savedStates = localStorage.getItem('iconStates');
+      if (savedStates) {
+        this.iconStates = JSON.parse(savedStates);
+      }
+    },
+
+    saveIconStates() {
+      localStorage.setItem('iconStates', JSON.stringify(this.iconStates));
+    },
+
+    isGrayscale(pokemon, iconType) {
+      const pokemonNumber = pokemon.number;
+      if (!this.iconStates[pokemonNumber]) {
+        return false;
+      }
+      return !!this.iconStates[pokemonNumber][iconType];
     },
     findTypeIcon(typeName) {
       //haesslich aber Array iterieren klappt aus unerfindlichen Gruenden nicht :'(
@@ -314,6 +352,16 @@ export default {
       }
       this.allPokemons = pokemonsData;
       this.pokemons = pokemonsData;
+      this.pokemons.forEach(pokemon => {
+        const pokemonNumber = pokemon.number;
+        if (!this.iconStates[pokemonNumber]) {
+          this.iconStates[pokemonNumber] = {
+            pokeball: true, // Initial grayscale state set to true
+            fernglas: true, // Assuming for other icons as well
+            shiny: true
+          };
+        }
+      });
     },
     determineRegion(number) {
       if (number >= 1 && number <= 151) return 'Kanto';
@@ -330,6 +378,8 @@ export default {
       localStorage.clear();
       console.log('Local storage cleared');
       this.resetFilter();
+      // Reload the page
+      window.location.reload();
     },
     capitalizeFirstLetter(string) {
       return string.charAt(0).toUpperCase() + string.slice(1);
@@ -518,7 +568,6 @@ main {
   height: auto;
   cursor: pointer; /* To indicate it's clickable */
   z-index: 10; /* To ensure it's above other elements */
-  filter: grayscale(100%);
 }
 .pokeball-button-container {
   display: flex;
@@ -541,6 +590,10 @@ main {
   align-items: center; /* Aligns items vertically */
   gap: 5px; /* Adjust the spacing between each type icon and label */
   justify-content: start; /* Aligns items to the start of the container */
+}
+
+.grayscale {
+  filter: grayscale(100%);
 }
 
 </style>
