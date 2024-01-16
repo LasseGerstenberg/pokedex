@@ -6,6 +6,7 @@
   "filterLabel": "Filter by Type",
   "applyFilterLabel": "Apply Filter",
   "resetFilterLabel": "Reset Filter",
+  "filterRegionLabel": "Filter by Region",
   "height": "Height",
   "weight": "Weight",
   "type": "Type",

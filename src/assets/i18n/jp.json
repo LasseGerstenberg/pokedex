@@ -6,6 +6,7 @@
   "filterLabel": "タイプ別にフィルター",
   "applyFilterLabel": "フィルターを適用する",
   "resetFilterLabel": "フィルターをリセットする",
+  "filterRegionLabel": "地域別フィルター",
   "height": "高さ",
   "weight": "重さ",
   "type": "タイプ",

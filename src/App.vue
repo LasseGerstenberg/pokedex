@@ -31,7 +31,18 @@ const { t } = useI18n();
               </a>
             </li>
           </ul>
-          <button class="btn btn-primary" @click="applyFilter">{{ t('applyFilterLabel') }}</button>
+        </div>
+        <div class="dropdown">
+          <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+            {{ t('filterRegionLabel') }}
+          </button>
+          <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+            <li v-for="region in getRegionsByLanguage()" :key="region">
+              <a class="dropdown-item" href="#">
+                <input type="checkbox" :value="region" v-model="selectedRegions"> {{ region }}
+              </a>
+            </li>
+          </ul>
         </div>
         <button class="btn-flag" @click="toggleLanguage">
           <img :src="currentFlag" class="navbar-icon" alt="Flag Icon" />
@@ -122,8 +133,17 @@ export default {
       if (newVal === '') {
         this.foundPokemonNumber = null;
       }
+    },
+    selectedTypes(newVal, oldVal) {
+      if (newVal.length !== oldVal.length || newVal.some((item, index) => item !== oldVal[index])) {
+        this.applyFilter();
+      }
+    },
+    selectedRegions() {
+      this.applyFilter();
     }
   },
+
   data() {
     return { //hier variablen anlegen key für language anlegen this. neue sprache zuweisen. vue.js ist reactiv ändert alle vorkommen im code, wo variablen referenziert
       pokeApiCurrentLanguage: 5,
@@ -133,6 +153,8 @@ export default {
       currentFlag: FlagEN,
       currentLanguage: 'en',
       iconStates: {},
+      selectedRegions: [],
+      regions: ['Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Unova', 'Kalos', 'Alola', 'Galar', 'Unknown'], // Add all regions you need
       pokemons: [],
       allPokemons: [],
       selectedTypes: [],
@@ -159,12 +181,14 @@ export default {
         { name: 'steel', icon: SteelIcon },
         { name: 'water', icon: WaterIcon },
       ],
-      pokemonTypesWithTranslations: []
+      pokemonTypesWithTranslations: [],
+      pokemonRegionsWithTranslations: []
     };
   },
   async mounted() { //Lifecyclehook
     await this.getPokemon();
     await this.fetchPokemonTypes();
+    await this.fetchRegions();
     this.loadIconStates();
   },
   methods: {
@@ -270,15 +294,14 @@ export default {
       this.foundPokemonNumber = null; // Clear the found Pokémon
     },
     applyFilter() {
-      if (this.selectedTypes.length === 0) {
-        this.pokemons = this.allPokemons;
-      } else {
-        this.pokemons = this.allPokemons.filter(pokemon =>
-            pokemon.types.some(type =>
-                this.selectedTypes.includes(this.convertTypeNameToEnglish(type))
-            )
-        );
-      }
+      this.pokemons = this.allPokemons.filter(pokemon => {
+        const typeMatch = this.selectedTypes.length === 0 || pokemon.types.some(type => this.selectedTypes.includes(this.convertTypeNameToEnglish(type)));
+        const regionMatch = this.selectedRegions.length === 0 || this.selectedRegions.includes(pokemon.region);
+        console.log('applyfilter ausgeführt');
+        console.log(typeMatch);
+        console.log(regionMatch);
+        return typeMatch && regionMatch;
+      });
     },
     setLanguageForPokemonCards() {
       this.pokemons.forEach(pokemon => {
@@ -317,7 +340,7 @@ export default {
 
       if (!pokemonsData) {
         try {
-          const response = await axios.get('https://pokeapi.co/api/v2/pokemon?limit=10');
+          const response = await axios.get('https://pokeapi.co/api/v2/pokemon?limit=3');
           const pokemonData = response.data.results;
 
           const pokemonDetails = await Promise.all(
@@ -399,15 +422,21 @@ export default {
     },
     // alle Typen in der aktuellen Sprache. Relevant fuer den Filter
     getTypesByLanguage() {
-      // Return an array of types based on the current language
-      // The logic here will depend on how your types are stored and how you want to filter them
-
       if(this.currentLanguage === 'en') {
         return this.pokemonTypesWithTranslations.map(t => t.nameEN);
       } else if (this.currentLanguage === 'de'){
         return this.pokemonTypesWithTranslations.map(t => t.nameDE);
       } else if (this.currentLanguage === 'jp'){
         return this.pokemonTypesWithTranslations.map(t => t.nameJP);
+      }
+    },
+    getRegionsByLanguage() {
+      if(this.currentLanguage === 'en') {
+        return this.pokemonRegionsWithTranslations.map(t => t.nameEN);
+      } else if (this.currentLanguage === 'de'){
+        return this.pokemonRegionsWithTranslations.map(t => t.nameDE);
+      } else if (this.currentLanguage === 'ja-Hrkt'){
+        return this.pokemonRegionsWithTranslations.map(t => t.nameJP);
       }
     },
     convertTypeNameToEnglish(type) {
@@ -448,15 +477,41 @@ export default {
           this.pokemonTypesWithTranslations = typesWithTranslations;
           localStorage.setItem('typesWithTranslations', JSON.stringify(typesWithTranslations));
         }
+    },
+    async fetchRegions() {
+      if(localStorage.getItem('pokemonRegionsWithTranslations')) {
+        this.pokemonRegionsWithTranslations = JSON.parse(localStorage.getItem('pokemonRegionsWithTranslations'));
+      } else {
+        const response = await axios.get('https://pokeapi.co/api/v2/region'); //Fetch all regions with endpoint url for each one
+        const regions = response.data.results; // Adjusted to access the results
+        console.log('REGIONEN');
+        console.log(regions);
+
+        for (let i = 0; i < regions.length; i++) {
+          const regionsWithMetaData = [];
+          const singleRegion = await axios.get(regions[i].url);
+          const singleRegionMetaData = singleRegion.data.names;
+
+          // Find the specific translations you need
+          const nameEN = singleRegionMetaData.find(name => name.language.name === 'en')?.name || 'N/A';
+          const nameDE = singleRegionMetaData.find(name => name.language.name === 'de')?.name || 'N/A';
+          const nameJP = singleRegionMetaData.find(name => name.language.name === 'ja-Hrkt')?.name || 'N/A';
+
+          const regionMetaData = { nameEN, nameDE, nameJP };
+          regionsWithMetaData.push(regionMetaData);
+        }
+        this.pokemonRegionsWithTranslations = regionsWithMetaData;
+        localStorage.setItem('pokemonRegionsWithTranslations', JSON.stringify(pokemonRegionsWithTranslations));
       }
-  },
+    }
+  }
 };
 </script>
 
 <style> // evtl noch scoped, dann gilt es nur für Komponente
 
 body {
-  font-family: 'Arial', sans-serif;
+  font-family: 'Source Code Pro', sans-serif;
   margin: 0;
   padding: 0;
 }
