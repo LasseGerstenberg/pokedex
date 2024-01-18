@@ -32,6 +32,7 @@ const { t } = useI18n();
             </li>
           </ul>
         </div>
+        <!-- Dropdown for filtering by region -->
         <div class="dropdown">
           <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
             {{ t('filterRegionLabel') }}
@@ -39,7 +40,7 @@ const { t } = useI18n();
           <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
             <li v-for="region in getRegionsByLanguage()" :key="region">
               <a class="dropdown-item" href="#">
-                <input type="checkbox" :value="region" v-model="selectedRegions"> {{ region }}
+                <input type="checkbox" :value="convertRegionNameToEnglish(region)" v-model="selectedRegions"> {{ region }}
               </a>
             </li>
           </ul>
@@ -297,9 +298,6 @@ export default {
       this.pokemons = this.allPokemons.filter(pokemon => {
         const typeMatch = this.selectedTypes.length === 0 || pokemon.types.some(type => this.selectedTypes.includes(this.convertTypeNameToEnglish(type)));
         const regionMatch = this.selectedRegions.length === 0 || this.selectedRegions.includes(pokemon.region);
-        console.log('applyfilter ausgeführt');
-        console.log(typeMatch);
-        console.log(regionMatch);
         return typeMatch && regionMatch;
       });
     },
@@ -431,11 +429,15 @@ export default {
       }
     },
     getRegionsByLanguage() {
+      console.log("getRegionsByLanguage was called");
       if(this.currentLanguage === 'en') {
         return this.pokemonRegionsWithTranslations.map(t => t.nameEN);
       } else if (this.currentLanguage === 'de'){
         return this.pokemonRegionsWithTranslations.map(t => t.nameDE);
-      } else if (this.currentLanguage === 'ja-Hrkt'){
+      } else if (this.currentLanguage === 'ja'){
+        console.log(this.pokemonRegionsWithTranslations);
+        console.log('break');
+        console.log(this.pokemonRegionsWithTranslations.map(t => t.nameJP));
         return this.pokemonRegionsWithTranslations.map(t => t.nameJP);
       }
     },
@@ -450,8 +452,18 @@ export default {
       } else {
         return type;
       }
+    },
+    convertRegionNameToEnglish(region) {
+      region = this.capitalizeFirstLetter(region);
 
-
+      const foundRegionObject = this.pokemonRegionsWithTranslations.find(t =>
+          t.nameEN === region || t.nameDE === region || t.nameJP === region
+      );
+      if(foundRegionObject) {
+        return foundRegionObject.nameEN;
+      } else {
+        return region;
+      }
     },
     //fetch all pokemon types and build an array with all translations
     async fetchPokemonTypes() {
@@ -484,11 +496,8 @@ export default {
       } else {
         const response = await axios.get('https://pokeapi.co/api/v2/region'); //Fetch all regions with endpoint url for each one
         const regions = response.data.results; // Adjusted to access the results
-        console.log('REGIONEN');
-        console.log(regions);
-
+        const regionsWithMetaData = [];
         for (let i = 0; i < regions.length; i++) {
-          const regionsWithMetaData = [];
           const singleRegion = await axios.get(regions[i].url);
           const singleRegionMetaData = singleRegion.data.names;
 
@@ -501,15 +510,14 @@ export default {
           regionsWithMetaData.push(regionMetaData);
         }
         this.pokemonRegionsWithTranslations = regionsWithMetaData;
-        localStorage.setItem('pokemonRegionsWithTranslations', JSON.stringify(pokemonRegionsWithTranslations));
+        localStorage.setItem('pokemonRegionsWithTranslations', JSON.stringify(this.pokemonRegionsWithTranslations));
       }
     }
   }
 };
 </script>
 
-<style> // evtl noch scoped, dann gilt es nur für Komponente
-
+<style>
 body {
   font-family: 'Source Code Pro', sans-serif;
   margin: 0;
