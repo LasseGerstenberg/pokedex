@@ -430,11 +430,13 @@ export default {
     },
     getRegionsByLanguage() {
       console.log("getRegionsByLanguage was called");
+      console.log('current language');
+      console.log(this.currentLanguage);
       if(this.currentLanguage === 'en') {
         return this.pokemonRegionsWithTranslations.map(t => t.nameEN);
       } else if (this.currentLanguage === 'de'){
         return this.pokemonRegionsWithTranslations.map(t => t.nameDE);
-      } else if (this.currentLanguage === 'ja'){
+      } else if (this.currentLanguage === 'jp'){
         console.log(this.pokemonRegionsWithTranslations);
         console.log('break');
         console.log(this.pokemonRegionsWithTranslations.map(t => t.nameJP));
@@ -472,13 +474,12 @@ export default {
         } else {
           const typesWithTranslations = [];
           const response = await axios.get('https://pokeapi.co/api/v2/type');
-          const types = response.data.results; // Adjusted to access the results
+          const types = response.data.results;
 
           for (let i = 0; i < types.length; i++) {
             const singleTypeResponse = await axios.get(types[i].url);
-            const singleTypeMetaData = singleTypeResponse.data.names; // Assuming 'names' is the correct field
+            const singleTypeMetaData = singleTypeResponse.data.names;
 
-            // Find the specific translations you need
             const nameEN = singleTypeMetaData.find(name => name.language.name === 'en')?.name || 'N/A';
             const nameDE = singleTypeMetaData.find(name => name.language.name === 'de')?.name || 'N/A';
             const nameJP = singleTypeMetaData.find(name => name.language.name === 'ja')?.name || 'N/A';
@@ -494,8 +495,8 @@ export default {
       if(localStorage.getItem('pokemonRegionsWithTranslations')) {
         this.pokemonRegionsWithTranslations = JSON.parse(localStorage.getItem('pokemonRegionsWithTranslations'));
       } else {
-        const response = await axios.get('https://pokeapi.co/api/v2/region'); //Fetch all regions with endpoint url for each one
-        const regions = response.data.results; // Adjusted to access the results
+        const response = await axios.get('https://pokeapi.co/api/v2/region');
+        const regions = response.data.results;
         const regionsWithMetaData = [];
         for (let i = 0; i < regions.length; i++) {
           const singleRegion = await axios.get(regions[i].url);
@@ -532,7 +533,7 @@ body {
 }
 
 main {
-  padding-top: 70px; /* Adjust this value based on your header's height */
+  padding-top: 70px;
 }
 
 @keyframes jump {
@@ -545,8 +546,8 @@ main {
 }
 
 .type-icon {
-  height: 20px; /* Adjust as needed */
-  width: 20px;  /* Adjust as needed */
+  height: 20px;
+  width: 20px;
   margin-right: 5px;
 }
 
@@ -556,8 +557,8 @@ main {
   justify-content: space-around;
 }
 .highlighted {
-  border: 2px solid #FFD700; /* Gold border for highlighting */
-  background-color: #E0FFFF; /* Lighter background for highlighting */
+  border: 2px solid #FFD700;
+  background-color: #E0FFFF;
 }
 
 .btn-flag {
@@ -574,7 +575,7 @@ main {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin: 10px;
   padding: 20px;
-  width: calc(33.333% - 20px); /* Adjusted width for 3 cards per row */
+  width: calc(33.333% - 20px);
   text-align: center;
 }
 
@@ -625,34 +626,34 @@ main {
 }
 
 .pokeball-button {
-  top: 10px; /* Adjust as needed */
-  left: 10px; /* Adjust as needed */
-  width: 30px; /* Adjust size as needed */
+  top: 10px;
+  left: 10px;
+  width: 30px;
   height: auto;
-  cursor: pointer; /* To indicate it's clickable */
-  z-index: 10; /* To ensure it's above other elements */
+  cursor: pointer;
+  z-index: 10;
 }
 .pokeball-button-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  margin-right: 20px; /* Space between buttons and the image */
-  padding-left: 20px; /* Increase this value to push buttons more to the left */
+  margin-right: 20px;
+  padding-left: 20px;
 }
 .card-content {
   display: flex;
   align-items: center;
-  justify-content: flex-start; /* Align children to the start of the container */
-  width: 100%; /* Ensure the content stretches to full width of the card */
+  justify-content: flex-start;
+  width: 100%;
 }
 
 .type-container {
-  display: flex; /* Enables flexbox */
-  flex-wrap: nowrap; /* Prevents wrapping to a new line */
-  align-items: center; /* Aligns items vertically */
-  gap: 5px; /* Adjust the spacing between each type icon and label */
-  justify-content: start; /* Aligns items to the start of the container */
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 5px;
+  justify-content: start;
 }
 
 .grayscale {
