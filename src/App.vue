@@ -151,6 +151,9 @@ export default {
       pokeApiLanguageDe: 5,
       pokeApiLanguageEn: 8,
       pokeApiLanguageJp: 9,
+      pokeApiGeneralListURL: 'https://pokeapi.co/api/v2/pokemon?limit=2',
+      globalPokemonList: [],
+      globalPokemonNamesWithTranslations: [],
       currentFlag: FlagEN,
       currentLanguage: 'en',
       iconStates: {},
@@ -312,38 +315,38 @@ export default {
             });
       });
     },
-    fetchLanguageData(id) {
-      const apiUrl = `https://pokeapi.co/api/v2/pokemon-species/${id}/`;
-      const localStorageKey = `pokemonLanguageData_${id}`;
+    async addSinglePokemonNameTranslationsToGlobalList(url) {
+      try {
+        let response = await axios.get(url);
+        const allTranslationsForSingleName = response.data.names;
 
-      // Check if the data is already in local storage
-      const cachedData = localStorage.getItem(localStorageKey);
-      if (cachedData) {
-        return Promise.resolve(JSON.parse(cachedData));
+        const nameEN = allTranslationsForSingleName.find(name => name.language.name === 'en')?.name || 'N/A';
+        const nameDE = allTranslationsForSingleName.find(name => name.language.name === 'de')?.name || 'N/A';
+        const nameJP = allTranslationsForSingleName.find(name => name.language.name === 'ja')?.name || 'N/A';
+
+        const objectWithTranslatedNames = { nameEN, nameDE, nameJP };
+
+        console.log(objectWithTranslatedNames);
+        this.globalPokemonNamesWithTranslations.push(objectWithTranslatedNames);
+      } catch (error) {
+        console.error('Error fetching data:', error); // Print any errors that occur
       }
-
-      // Fetch from API and store in local storage
-      return axios.get(apiUrl)
-          .then(response => {
-            localStorage.setItem(localStorageKey, JSON.stringify(response.data));
-            return response.data;
-          })
-          .catch(error => {
-            console.error('Error fetching language data:', error);
-          })
     },
     async getPokemon() {
       const localStorageKey = 'pokemonsData';
-      let pokemonsData = localStorage.getItem(localStorageKey);
+      let allPokemonList = localStorage.getItem(localStorageKey);
+      this.globalPokemonNamesWithTranslations = localStorage.getItem('allPokemonNamesWithTranslations');
 
-      if (!pokemonsData) {
+      if (!allPokemonList) {
+        console.log('PokeAPI was called by method getPokemon()');
         try {
-          const response = await axios.get('https://pokeapi.co/api/v2/pokemon?limit=3');
+          const response = await axios.get(this.pokeApiGeneralListURL);
           const pokemonData = response.data.results;
 
           const pokemonDetails = await Promise.all(
               pokemonData.map(async (pokemon) => {
                 const detailResponse = await axios.get(pokemon.url);
+                await this.addSinglePokemonNameTranslationsToGlobalList(detailResponse.data.species.url);
                 const types = detailResponse.data.types.map(t => t.type.name);
                 const number = detailResponse.data.id; // Pokedex number
                 const region = this.determineRegion(number);
@@ -363,22 +366,23 @@ export default {
               })
           );
 
-          pokemonsData = pokemonDetails;
-          localStorage.setItem(localStorageKey, JSON.stringify(pokemonsData));
+          allPokemonList = pokemonDetails;
+          localStorage.setItem('allPokemonNamesWithTranslations', JSON.stringify(this.globalPokemonNamesWithTranslations));
+          localStorage.setItem(localStorageKey, JSON.stringify(allPokemonList));
         } catch (error) {
           console.error(error);
         }
       } else {
-        pokemonsData = JSON.parse(pokemonsData);
+        allPokemonList = JSON.parse(allPokemonList);
       }
-      this.allPokemons = pokemonsData;
-      this.pokemons = pokemonsData;
+      this.allPokemons = allPokemonList;
+      this.pokemons = allPokemonList;
       this.pokemons.forEach(pokemon => {
         const pokemonNumber = pokemon.number;
         if (!this.iconStates[pokemonNumber]) {
           this.iconStates[pokemonNumber] = {
-            pokeball: true, // Initial grayscale state set to true
-            fernglas: true, // Assuming for other icons as well
+            pokeball: true,
+            fernglas: true,
             shiny: true
           };
         }
@@ -429,17 +433,11 @@ export default {
       }
     },
     getRegionsByLanguage() {
-      console.log("getRegionsByLanguage was called");
-      console.log('current language');
-      console.log(this.currentLanguage);
       if(this.currentLanguage === 'en') {
         return this.pokemonRegionsWithTranslations.map(t => t.nameEN);
       } else if (this.currentLanguage === 'de'){
         return this.pokemonRegionsWithTranslations.map(t => t.nameDE);
       } else if (this.currentLanguage === 'jp'){
-        console.log(this.pokemonRegionsWithTranslations);
-        console.log('break');
-        console.log(this.pokemonRegionsWithTranslations.map(t => t.nameJP));
         return this.pokemonRegionsWithTranslations.map(t => t.nameJP);
       }
     },
