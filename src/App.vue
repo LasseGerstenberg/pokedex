@@ -316,6 +316,7 @@ export default {
       });
     },
     async addSinglePokemonNameTranslationsToGlobalList(url) {
+      let objectWithTranslatedNames;
       try {
         let response = await axios.get(url);
         const allTranslationsForSingleName = response.data.names;
@@ -324,18 +325,21 @@ export default {
         const nameDE = allTranslationsForSingleName.find(name => name.language.name === 'de')?.name || 'N/A';
         const nameJP = allTranslationsForSingleName.find(name => name.language.name === 'ja')?.name || 'N/A';
 
-        const objectWithTranslatedNames = { nameEN, nameDE, nameJP };
-
+        objectWithTranslatedNames = { nameEN, nameDE, nameJP };
         console.log(objectWithTranslatedNames);
-        this.globalPokemonNamesWithTranslations.push(objectWithTranslatedNames);
       } catch (error) {
         console.error('Error fetching data:', error); // Print any errors that occur
       }
+      this.addArray(objectWithTranslatedNames);
+    },
+    addArray(pokekekre) {
+      this.globalPokemonNamesWithTranslations.push(pokekekre);
+      console.log(this.globalPokemonNamesWithTranslations);
     },
     async getPokemon() {
       const localStorageKey = 'pokemonsData';
       let allPokemonList = localStorage.getItem(localStorageKey);
-      this.globalPokemonNamesWithTranslations = localStorage.getItem('allPokemonNamesWithTranslations');
+      //this.globalPokemonNamesWithTranslations = localStorage.getItem('allPokemonNamesWithTranslations');
 
       if (!allPokemonList) {
         console.log('PokeAPI was called by method getPokemon()');
@@ -365,9 +369,7 @@ export default {
                 };
               })
           );
-
           allPokemonList = pokemonDetails;
-          localStorage.setItem('allPokemonNamesWithTranslations', JSON.stringify(this.globalPokemonNamesWithTranslations));
           localStorage.setItem(localStorageKey, JSON.stringify(allPokemonList));
         } catch (error) {
           console.error(error);
