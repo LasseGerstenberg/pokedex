@@ -24,7 +24,7 @@ const { t } = useI18n();
             {{ t('filterLabel') }}
           </button>
           <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-            <li v-for="type in getTypesByLanguage()" :key="type">
+            <li v-for="type in getTypesOrRegionsByLanguage(pokemonTypesWithTranslations)" :key="type">
               <a class="dropdown-item" href="#">
                 <img :src="findTypeIcon(convertTypeNameToEnglish(type))" class="type-icon" alt="Type Icon" />
                 <input type="checkbox" :value="convertTypeNameToEnglish(type)" v-model="selectedTypes"> {{ type }}
@@ -38,7 +38,7 @@ const { t } = useI18n();
             {{ t('filterRegionLabel') }}
           </button>
           <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-            <li v-for="region in getRegionsByLanguage()" :key="region">
+            <li v-for="region in getTypesOrRegionsByLanguage(pokemonRegionsWithTranslations)" :key="region">
               <a class="dropdown-item" href="#">
                 <input type="checkbox" :value="convertRegionNameToEnglish(region)" v-model="selectedRegions"> {{ region }}
               </a>
@@ -102,7 +102,7 @@ const { t } = useI18n();
     </main>
 </template>
 <script>
-import axios from 'axios';
+import axios, {HttpStatusCode} from 'axios';
 import BugIcon from '@/assets/Bug_icon.png';
 import DarkIcon from '@/assets/Dark_icon.png';
 import DragonIcon from '@/assets/Dragon_icon.png';
@@ -126,7 +126,6 @@ import FlagEN from '@/assets/EN.png'
 import FlagDE from '@/assets/DE.png'
 import FlagJP from '@/assets/JP.png'
 import {useI18n} from "vue-i18n";
-import {toRaw} from "vue";
 
 export default {
   name: 'App',
@@ -147,12 +146,12 @@ export default {
   },
 
   data() {
-    return { //hier variablen anlegen key für language anlegen this. neue sprache zuweisen. vue.js ist reactiv ändert alle vorkommen im code, wo variablen referenziert
+    return {
       pokeApiCurrentLanguage: 5,
       pokeApiLanguageDe: 5,
       pokeApiLanguageEn: 8,
       pokeApiLanguageJp: 9,
-      pokeApiGeneralListURL: 'https://pokeapi.co/api/v2/pokemon?limit=15',
+      pokeApiGeneralListURL: 'https://pokeapi.co/api/v2/pokemon?limit=350',
       globalPokemonList: [],
       globalPokemonNamesWithTranslations: [],
       currentFlag: FlagEN,
@@ -166,32 +165,31 @@ export default {
       foundPokemonNumber: null,
       searchInput: '',
       pokemonTypes2: [],
-      pokemonTypes: [
-        { name: 'bug', icon: BugIcon },
-        { name: 'dark', icon: DarkIcon },
-        { name: 'dragon', icon: DragonIcon },
-        { name: 'electric', icon: ElectricIcon },
-        { name: 'fairy', icon: FairyIcon },
-        { name: 'fighting', icon: FightingIcon },
-        { name: 'fire', icon: FireIcon },
-        { name: 'flying', icon: FlyingIcon },
-        { name: 'ghost', icon: GhostIcon },
-        { name: 'grass', icon: GrassIcon },
-        { name: 'ground', icon: GroundIcon },
-        { name: 'ice', icon: IceIcon },
-        { name: 'normal', icon: NormalIcon },
-        { name: 'poison', icon: PoisonIcon },
-        { name: 'psychic', icon: PsychicIcon },
-        { name: 'rock', icon: RockIcon },
-        { name: 'steel', icon: SteelIcon },
-        { name: 'water', icon: WaterIcon },
-      ],
+      typeIcons: {
+        Bug: BugIcon,
+        Dark: DarkIcon,
+        Dragon: DragonIcon,
+        Electric: ElectricIcon,
+        Fairy: FairyIcon,
+        Fighting: FightingIcon,
+        Fire: FireIcon,
+        Flying: FlyingIcon,
+        Ghost: GhostIcon,
+        Grass: GrassIcon,
+        Ground: GroundIcon,
+        Ice: IceIcon,
+        Normal: NormalIcon,
+        Poison: PoisonIcon,
+        Psychic: PsychicIcon,
+        Rock: RockIcon,
+        Steel: SteelIcon,
+        Water: WaterIcon
+      },
       pokemonTypesWithTranslations: [],
       pokemonRegionsWithTranslations: []
     };
   },
-  async mounted() { //Lifecyclehook
-    const storedLanguage = localStorage.getItem('currentLanguage');
+  async mounted() {
     this.getLocalStorageSizeInMB();
     await this.getPokemon();
     await this.fetchPokemonTypes();
@@ -224,13 +222,13 @@ export default {
         this.currentFlag = FlagDE;
         this.handlePokemonTranslation(this.pokeApiLanguageDe);
       } else if (this.currentLanguage === 'de') {
-        this.$i18n.locale = 'jp'
+        this.$i18n.locale = 'jp';
         this.currentLanguage = 'jp';
         localStorage.setItem('currentLanguage', this.currentLanguage);
         this.currentFlag = FlagJP;
         this.handlePokemonTranslation(this.pokeApiLanguageJp);
       } else {
-        this.$i18n.locale = 'en'
+        this.$i18n.locale = 'en';
         this.currentLanguage = 'en';
         localStorage.setItem('currentLanguage', this.currentLanguage);
         this.currentFlag = FlagEN;
@@ -256,11 +254,9 @@ export default {
         this.iconStates = JSON.parse(savedStates);
       }
     },
-
     saveIconStates() {
       localStorage.setItem('iconStates', JSON.stringify(this.iconStates));
     },
-
     isGrayscale(pokemon, iconType) {
       const pokemonNumber = pokemon.number;
       if (!this.iconStates[pokemonNumber]) {
@@ -269,26 +265,7 @@ export default {
       return !!this.iconStates[pokemonNumber][iconType];
     },
     findTypeIcon(typeName) {
-      //haesslich aber Array iterieren klappt aus unerfindlichen Gruenden nicht :'(
-      if(typeName === "Bug") return BugIcon;
-      if(typeName === "Dark") return DarkIcon;
-      if(typeName === "Dragon") return DragonIcon;
-      if(typeName === "Electric") return ElectricIcon;
-      if(typeName === "Fairy") return FairyIcon;
-      if(typeName === "Fighting") return FightingIcon;
-      if(typeName === "Fire") return FireIcon;
-      if(typeName === "Flying") return FlyingIcon;
-      if(typeName === "Ghost") return GhostIcon;
-      if(typeName === "Grass") return GrassIcon;
-      if(typeName === "Ground") return GroundIcon;
-      if(typeName === "Ice") return IceIcon;
-      if(typeName === "Normal") return NormalIcon;
-      if(typeName === "Poison") return PoisonIcon;
-      if(typeName === "Psychic") return PsychicIcon;
-      if(typeName === "Rock") return RockIcon;
-      if(typeName === "Steel") return SteelIcon;
-      if(typeName === "Water") return WaterIcon;
-      return QuestionMarkIcon;
+      return this.typeIcons[typeName] || QuestionMarkIcon;
     },
     scrollToPokemon(inputValue) {
       const searchQuery = inputValue.toLowerCase();
@@ -318,24 +295,13 @@ export default {
       this.selectedTypes = [];
       this.pokemons = this.allPokemons;
       this.searchInput = '';
-      this.foundPokemonNumber = null; // Clear the found Pokémon
+      this.foundPokemonNumber = null;
     },
     applyFilter() {
       this.pokemons = this.allPokemons.filter(pokemon => {
         const typeMatch = this.selectedTypes.length === 0 || pokemon.types.some(type => this.selectedTypes.includes(this.convertTypeNameToEnglish(type)));
         const regionMatch = this.selectedRegions.length === 0 || this.selectedRegions.includes(pokemon.region);
         return typeMatch && regionMatch;
-      });
-    },
-    setLanguageForPokemonCardsOLD() {
-      this.pokemons.forEach(pokemon => {
-        this.fetchLanguageData(pokemon.number)
-            .then(data => {
-                pokemon.name = data.names[this.pokeApiCurrentLanguage].name
-            })
-            .catch(error => {
-              console.error('Error in setLanguageForPokemonCards:', error);
-            });
       });
     },
     setLanguageForPokemonCards() {
@@ -436,7 +402,7 @@ export default {
       if (number >= 650 && number <= 721) return 'Kalos';
       if (number >= 722 && number <= 809) return 'Alola';
       if (number >= 810) return 'Galar';
-      return 'Unknown'; // For numbers that don't fall into any category
+      return 'Unknown';
     },
     clearLocalStorage() {
       localStorage.clear();
@@ -461,23 +427,13 @@ export default {
         return typeObject.nameJP;
       }
     },
-    // alle Typen in der aktuellen Sprache. Relevant fuer den Filter
-    getTypesByLanguage() {
+    getTypesOrRegionsByLanguage(typesOrRegions) {
       if(this.currentLanguage === 'en') {
-        return this.pokemonTypesWithTranslations.map(t => t.nameEN);
+        return typesOrRegions.map(t => t.nameEN);
       } else if (this.currentLanguage === 'de'){
-        return this.pokemonTypesWithTranslations.map(t => t.nameDE);
+        return typesOrRegions.map(t => t.nameDE);
       } else if (this.currentLanguage === 'jp'){
-        return this.pokemonTypesWithTranslations.map(t => t.nameJP);
-      }
-    },
-    getRegionsByLanguage() {
-      if(this.currentLanguage === 'en') {
-        return this.pokemonRegionsWithTranslations.map(t => t.nameEN);
-      } else if (this.currentLanguage === 'de'){
-        return this.pokemonRegionsWithTranslations.map(t => t.nameDE);
-      } else if (this.currentLanguage === 'jp'){
-        return this.pokemonRegionsWithTranslations.map(t => t.nameJP);
+        return typesOrRegions.map(t => t.nameJP);
       }
     },
     convertTypeNameToEnglish(type) {
@@ -507,7 +463,6 @@ export default {
     //fetch all pokemon types and build an array with all translations
     async fetchPokemonTypes() {
       if(localStorage.getItem('pokemonTypesWithTranslations')) {
-        // Ensure you are retrieving using the correct key
         this.pokemonTypesWithTranslations = JSON.parse(localStorage.getItem('pokemonTypesWithTranslations'));
       } else {
         const typesWithTranslations = [];
@@ -527,7 +482,6 @@ export default {
           typesWithTranslations.push(typeMetaData);
         }
         this.pokemonTypesWithTranslations = typesWithTranslations;
-        // Ensure you are setting using the correct key
         localStorage.setItem('pokemonTypesWithTranslations', JSON.stringify(typesWithTranslations));
       }
     },
