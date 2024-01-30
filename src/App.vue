@@ -161,6 +161,7 @@ export default {
       pokemons: [],
       allPokemons: [],
       selectedTypes: [],
+      alternativeForms: [],
       foundPokemonNumber: null,
       searchInput: '',
       pokemonTypes2: [],
@@ -389,7 +390,9 @@ export default {
                 const types = detailResponse.data.types.map(t => this.capitalizeFirstLetter(t.type.name));
                 const number = detailResponse.data.id; // Pokedex number
                 const region = this.determineRegion(number);
-
+                if(detailResponse.data.forms.length > 1) {
+                  this.alternativeForms.push(detailResponse);
+                }
                 return {
                   name: this.capitalizeFirstLetter(pokemon.name),
                   image: detailResponse.data.sprites.front_default,
@@ -404,6 +407,7 @@ export default {
                 };
               })
           );
+          console.log(this.alternativeForms);
           allPokemonList = pokemonDetails;
           localStorage.setItem('pokemonListWithStats', JSON.stringify(allPokemonList));
           localStorage.setItem('pokemonNamesWithTranslations', JSON.stringify(this.globalPokemonNamesWithTranslations));
