@@ -407,8 +407,42 @@ export default {
                 };
               })
           );
-          console.log(this.alternativeForms);
+
           allPokemonList = pokemonDetails;
+          let alternativeForms = [];
+          // Alternative Formen
+          for (var listOfAlternativeForms of this.alternativeForms) {
+            //einzelnes Pokemon zB Inkognito
+            console.log(listOfAlternativeForms);
+            let name = listOfAlternativeForms.data.name;
+            let height = listOfAlternativeForms.data.height;
+            let weight = listOfAlternativeForms.data.weight;
+            let stats = listOfAlternativeForms.data.stats;
+            let types = listOfAlternativeForms.data.types.map(t => this.capitalizeFirstLetter(t.type.name));
+            let number = listOfAlternativeForms.data.id;
+            let region = this.determineRegion(number);
+
+            //Einzelne Formen eines Pokemon iterieren
+            for(var form of listOfAlternativeForms.data.forms) {
+              const formObject = await axios.get(form.url);
+              const formName = formObject.data.name;
+              const formImage = formObject.data.sprites.front_default;
+
+              let pokemonForm = {
+                name: formName,
+                image: formImage,
+                details: {
+                  height: height,
+                  weight: weight,
+                },
+                stats: stats,
+                types: types,
+                number: number,
+                region: region,
+              }
+              allPokemonList.push(pokemonForm);
+            }
+          }
           localStorage.setItem('pokemonListWithStats', JSON.stringify(allPokemonList));
           localStorage.setItem('pokemonNamesWithTranslations', JSON.stringify(this.globalPokemonNamesWithTranslations));
         } catch (error) {
@@ -421,6 +455,7 @@ export default {
       }
       this.allPokemons = allPokemonList;
       this.pokemons = allPokemonList;
+      this.pokemons = this.pokemons.sort((a, b) => a.number - b.number);
       this.pokemons.forEach(pokemon => {
         const pokemonNumber = pokemon.number;
         if (!this.iconStates[pokemonNumber]) {
