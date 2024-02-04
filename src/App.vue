@@ -152,6 +152,7 @@ export default {
       pokeApiLanguageEn: 8,
       pokeApiLanguageJp: 9,
       pokeApiGeneralListURL: 'https://pokeapi.co/api/v2/pokemon?limit=250',
+      uniqueId: 0,
       globalPokemonList: [],
       globalPokemonNamesWithTranslations: [],
       currentFlag: FlagEN,
@@ -234,12 +235,12 @@ export default {
       this.setLanguageForPokemonCards(pokeApiLanguage);
     },
     onPokeballClick(pokemon, iconType) {
-      const pokemonNumber = pokemon.number;
-      if (!this.iconStates[pokemonNumber]) {
-        this.iconStates[pokemonNumber] = {};
+      const uniqueID = pokemon.uniqueID; // Use uniqueID instead of number
+      if (!this.iconStates[uniqueID]) {
+        this.iconStates[uniqueID] = {};
       }
 
-      this.iconStates[pokemonNumber][iconType] = !this.iconStates[pokemonNumber][iconType];
+      this.iconStates[uniqueID][iconType] = !this.iconStates[uniqueID][iconType];
       this.saveIconStates();
     },
     loadIconStates() {
@@ -252,11 +253,11 @@ export default {
       localStorage.setItem('iconStates', JSON.stringify(this.iconStates));
     },
     isGrayscale(pokemon, iconType) {
-      const pokemonNumber = pokemon.number;
-      if (!this.iconStates[pokemonNumber]) {
+      const uniqueID = pokemon.uniqueID; // Use uniqueID instead of number
+      if (!this.iconStates[uniqueID]) {
         return false;
       }
-      return !!this.iconStates[pokemonNumber][iconType];
+      return !!this.iconStates[uniqueID][iconType];
     },
     findTypeIcon(typeName) {
       return this.typeIcons[typeName] || QuestionMarkIcon;
@@ -394,6 +395,7 @@ export default {
                   this.alternativeForms.push(detailResponse);
                 }
                 return {
+                  uniqueID: this.getUniqueID(),
                   name: this.capitalizeFirstLetter(pokemon.name),
                   image: detailResponse.data.sprites.front_default,
                   details: {
@@ -429,6 +431,7 @@ export default {
               const formImage = formObject.data.sprites.front_default;
 
               let pokemonForm = {
+                uniqueID: this.getUniqueID(),
                 name: formName,
                 image: formImage,
                 details: {
@@ -466,6 +469,11 @@ export default {
           };
         }
       });
+    },
+    getUniqueID() {
+      let id = this.uniqueId;
+      this.uniqueId++;
+      return id;
     },
     determineRegion(number) {
       if (number >= 1 && number <= 151) return 'Kanto';
