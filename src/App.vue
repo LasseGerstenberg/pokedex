@@ -5,6 +5,7 @@ const { t } = useI18n();
 
 <template>
   <header>
+    <!-- Navbar at the top of the page -->
     <nav class="navbar navbar-dark bg-primary">
       <div class="container-fluid">
         <img src="@/assets/pokeball.png" class="navbar-icon" @click="clearLocalStorage"/>
@@ -53,8 +54,9 @@ const { t } = useI18n();
     </nav>
   </header>
   <main>
+    <!-- List with all pokemons -->
     <div class="pokemon-list">
-      <div v-for="pokemon in pokemons" :key="pokemon.name" class="pokemon-card" :id="`pokemon-${pokemon.number}`" :class="{ 'highlighted': pokemon.number === foundPokemonNumber}">
+      <div v-for="pokemon in pokemons" :key="pokemon.name" class="pokemon-card" :id="`pokemon-${pokemon.uniqueID}`" :class="{ 'highlighted': pokemon.uniqueID === foundPokemonUniqueID}">
         <h2>{{ pokemon.name }}</h2>
         <div class="card-content">
           <div class="pokeball-button-container">
@@ -71,7 +73,7 @@ const { t } = useI18n();
                  :class="{ 'grayscale': isGrayscale(pokemon, 'shiny') }"
                  @click="onPokeballClick(pokemon, 'shiny')" />
           </div>
-          <img :src="pokemon.image" :alt="pokemon.name" class="pokemon-image" :class="{ 'jump-animation': pokemon.number === foundPokemonNumber }" />
+          <img :src="pokemon.image" :alt="pokemon.name" class="pokemon-image" :class="{ 'jump-animation': pokemon.uniqueID === foundPokemonUniqueID }" />
         </div>
         <div class="pokemon-details">
           <p><strong>{{ t('type') }}:</strong>
@@ -132,7 +134,7 @@ export default {
   watch: {
     searchInput(newVal) {
       if (newVal === '') {
-        this.foundPokemonNumber = null;
+        this.foundPokemonUniqueID = null;
       }
     },
     selectedTypes(newVal, oldVal) {
@@ -151,7 +153,7 @@ export default {
       pokeApiLanguageDe: 5,
       pokeApiLanguageEn: 8,
       pokeApiLanguageJp: 9,
-      pokeApiGeneralListURL: 'https://pokeapi.co/api/v2/pokemon?limit=250',
+      pokeApiGeneralListURL: 'https://pokeapi.co/api/v2/pokemon?limit=450',
       uniqueId: 0,
       globalPokemonList: [],
       globalPokemonNamesWithTranslations: [],
@@ -163,7 +165,7 @@ export default {
       allPokemons: [],
       selectedTypes: [],
       alternativeForms: [],
-      foundPokemonNumber: null,
+      foundPokemonUniqueID: null,
       searchInput: '',
       pokemonTypes2: [],
       typeIcons: {
@@ -262,6 +264,7 @@ export default {
     findTypeIcon(typeName) {
       return this.typeIcons[typeName] || QuestionMarkIcon;
     },
+    // used for the search function
     scrollToPokemon(inputValue) {
       const searchQuery = inputValue.toLowerCase();
 
@@ -271,10 +274,11 @@ export default {
       );
 
       if (foundPokemon) {
-        this.foundPokemonNumber = foundPokemon.number;
+        this.foundPokemonUniqueID = foundPokemon.uniqueID;
 
         this.$nextTick(() => {
-          const element = document.getElementById(`pokemon-${foundPokemon.number}`);
+          console.log(`pokemon-${foundPokemon.number}`);
+          const element = document.getElementById(`pokemon-${foundPokemon.uniqueID}`);
           if (element) {
             element.scrollIntoView({ behavior: 'smooth' });
           } else {
@@ -283,18 +287,18 @@ export default {
         });
       } else {
         console.log('Pokemon not found');
-        this.foundPokemonNumber = null;
+        this.foundPokemonUniqueID = null;
       }
     },
     resetFilter() {
       this.selectedTypes = [];
       this.pokemons = this.allPokemons;
       this.searchInput = '';
-      this.foundPokemonNumber = null;
+      this.foundPokemonUniqueID = null;
     },
     applyFilter() {
       this.pokemons = this.allPokemons.filter(pokemon => {
-        const typeMatch = this.selectedTypes.length === 0 || pokemon.types.some(type => this.selectedTypes.includes(searchWrapper('single', 'en', pokemonTypesWithTranslations, type)));
+        const typeMatch = this.selectedTypes.length === 0 || pokemon.types.some(type => this.selectedTypes.includes(this.searchWrapper('single', 'en', this.pokemonTypesWithTranslations, type)));
         const regionMatch = this.selectedRegions.length === 0 || this.selectedRegions.includes(pokemon.region);
         return typeMatch && regionMatch;
       });
@@ -339,7 +343,7 @@ export default {
         console.error('Error fetching data:', error);
       }
     },
-    //wenn target language null, dann aktuelle sprache verwenden
+    // wrapper to handle different searche scenarios
     searchWrapper(listOrSingle, targetLanguage, targetCollection, searchString) {
       if(listOrSingle === 'list') return this.getTranslatedList(targetCollection);
       if(listOrSingle === 'single') {
@@ -375,6 +379,7 @@ export default {
       }
       return translatedCollection;
     },
+    // uses the pokeApi to get the data for the pokemons
     async getPokemon() {
       let allPokemonList = localStorage.getItem('pokemonListWithStats');
 
@@ -389,7 +394,7 @@ export default {
                 const detailResponse = await axios.get(pokemon.url);
                 await this.addSinglePokemonNameTranslationsToGlobalList(detailResponse.data.species.url);
                 const types = detailResponse.data.types.map(t => this.capitalizeFirstLetter(t.type.name));
-                const number = detailResponse.data.id; // Pokedex number
+                const number = detailResponse.data.id;
                 const region = this.determineRegion(number);
                 if(detailResponse.data.forms.length > 1) {
                   this.alternativeForms.push(detailResponse);
@@ -412,9 +417,9 @@ export default {
 
           allPokemonList = pokemonDetails;
           let alternativeForms = [];
-          // Alternative Formen
+          // Alternative Forms
           for (var listOfAlternativeForms of this.alternativeForms) {
-            //einzelnes Pokemon zB Inkognito
+            //single Pokemon eg Inkognito
             console.log(listOfAlternativeForms);
             let name = listOfAlternativeForms.data.name;
             let height = listOfAlternativeForms.data.height;
@@ -424,7 +429,7 @@ export default {
             let number = listOfAlternativeForms.data.id;
             let region = this.determineRegion(number);
 
-            //Einzelne Formen eines Pokemon iterieren
+            // iterate forms of a pokemon
             for(var form of listOfAlternativeForms.data.forms) {
               const formObject = await axios.get(form.url);
               const formName = formObject.data.name;
