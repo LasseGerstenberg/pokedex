@@ -5,6 +5,7 @@ const { t } = useI18n();
 
 <template>
   <header>
+    <!-- Navbar at the top of the page -->
     <nav class="navbar navbar-dark bg-primary">
       <div class="container-fluid">
         <img src="@/assets/pokeball.png" class="navbar-icon" @click="clearLocalStorage"/>
@@ -24,10 +25,10 @@ const { t } = useI18n();
             {{ t('filterLabel') }}
           </button>
           <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-            <li v-for="type in getTypesByLanguage()" :key="type">
+            <li v-for="type in searchWrapper('list', null, pokemonTypesWithTranslations, null)" :key="type">
               <a class="dropdown-item" href="#">
-                <img :src="findTypeIcon(convertTypeNameToEnglish(type))" class="type-icon" alt="Type Icon" />
-                <input type="checkbox" :value="convertTypeNameToEnglish(type)" v-model="selectedTypes"> {{ type }}
+                <img :src="findTypeIcon(searchWrapper('single', 'en', pokemonTypesWithTranslations, type))" class="type-icon" alt="Type Icon" />
+                <input type="checkbox" :value="searchWrapper('single', 'en', pokemonTypesWithTranslations, type)" v-model="selectedTypes"> {{ type }}
               </a>
             </li>
           </ul>
@@ -38,9 +39,9 @@ const { t } = useI18n();
             {{ t('filterRegionLabel') }}
           </button>
           <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-            <li v-for="region in getRegionsByLanguage()" :key="region">
+            <li v-for="region in searchWrapper('list', null, pokemonRegionsWithTranslations, null)" :key="region">
               <a class="dropdown-item" href="#">
-                <input type="checkbox" :value="convertRegionNameToEnglish(region)" v-model="selectedRegions"> {{ region }}
+                <input type="checkbox" :value="searchWrapper('single', 'en', pokemonRegionsWithTranslations, region)" v-model="selectedRegions"> {{ region }}
               </a>
             </li>
           </ul>
@@ -53,8 +54,9 @@ const { t } = useI18n();
     </nav>
   </header>
   <main>
+    <!-- List with all pokemons -->
     <div class="pokemon-list">
-      <div v-for="pokemon in pokemons" :key="pokemon.name" class="pokemon-card" :id="`pokemon-${pokemon.number}`" :class="{ 'highlighted': pokemon.number === foundPokemonNumber}">
+      <div v-for="pokemon in pokemons" :key="pokemon.name" class="pokemon-card" :id="`pokemon-${pokemon.uniqueID}`" :class="{ 'highlighted': pokemon.uniqueID === foundPokemonUniqueID}">
         <h2>{{ pokemon.name }}</h2>
         <div class="card-content">
           <div class="pokeball-button-container">
@@ -71,13 +73,13 @@ const { t } = useI18n();
                  :class="{ 'grayscale': isGrayscale(pokemon, 'shiny') }"
                  @click="onPokeballClick(pokemon, 'shiny')" />
           </div>
-          <img :src="pokemon.image" :alt="pokemon.name" class="pokemon-image" :class="{ 'jump-animation': pokemon.number === foundPokemonNumber }" />
+          <img :src="pokemon.image" :alt="pokemon.name" class="pokemon-image" :class="{ 'jump-animation': pokemon.uniqueID === foundPokemonUniqueID }" />
         </div>
         <div class="pokemon-details">
           <p><strong>{{ t('type') }}:</strong>
             <div class="type-container">
       <span v-for="type in pokemon.types" :key="type">
-        <img :src="findTypeIcon(convertTypeNameToEnglish(type))" class="type-icon" alt="Type Icon" /> {{ getTypeByLanguage(type) }}
+        <img :src="findTypeIcon(searchWrapper('single', 'en', pokemonTypesWithTranslations, type))" class="type-icon" alt="Type Icon" /> {{ searchWrapper('single', null, pokemonTypesWithTranslations, type) }}
       </span>
             </div>
             </p>
@@ -102,7 +104,7 @@ const { t } = useI18n();
     </main>
 </template>
 <script>
-import axios from 'axios';
+import axios, {HttpStatusCode} from 'axios';
 import BugIcon from '@/assets/Bug_icon.png';
 import DarkIcon from '@/assets/Dark_icon.png';
 import DragonIcon from '@/assets/Dragon_icon.png';
@@ -132,7 +134,7 @@ export default {
   watch: {
     searchInput(newVal) {
       if (newVal === '') {
-        this.foundPokemonNumber = null;
+        this.foundPokemonUniqueID = null;
       }
     },
     selectedTypes(newVal, oldVal) {
@@ -146,67 +148,86 @@ export default {
   },
 
   data() {
-    return { //hier variablen anlegen key für language anlegen this. neue sprache zuweisen. vue.js ist reactiv ändert alle vorkommen im code, wo variablen referenziert
+    return {
       pokeApiCurrentLanguage: 5,
       pokeApiLanguageDe: 5,
       pokeApiLanguageEn: 8,
       pokeApiLanguageJp: 9,
+      pokeApiGeneralListURL: 'https://pokeapi.co/api/v2/pokemon?limit=450',
+      uniqueId: 0,
+      globalPokemonList: [],
+      globalPokemonNamesWithTranslations: [],
       currentFlag: FlagEN,
-      currentLanguage: 'en',
       iconStates: {},
       selectedRegions: [],
-      regions: ['Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Unova', 'Kalos', 'Alola', 'Galar', 'Unknown'], // Add all regions you need
+      regions: [],
       pokemons: [],
       allPokemons: [],
       selectedTypes: [],
-      foundPokemonNumber: null,
+      alternativeForms: [],
+      foundPokemonUniqueID: null,
       searchInput: '',
       pokemonTypes2: [],
-      pokemonTypes: [
-        { name: 'bug', icon: BugIcon },
-        { name: 'dark', icon: DarkIcon },
-        { name: 'dragon', icon: DragonIcon },
-        { name: 'electric', icon: ElectricIcon },
-        { name: 'fairy', icon: FairyIcon },
-        { name: 'fighting', icon: FightingIcon },
-        { name: 'fire', icon: FireIcon },
-        { name: 'flying', icon: FlyingIcon },
-        { name: 'ghost', icon: GhostIcon },
-        { name: 'grass', icon: GrassIcon },
-        { name: 'ground', icon: GroundIcon },
-        { name: 'ice', icon: IceIcon },
-        { name: 'normal', icon: NormalIcon },
-        { name: 'poison', icon: PoisonIcon },
-        { name: 'psychic', icon: PsychicIcon },
-        { name: 'rock', icon: RockIcon },
-        { name: 'steel', icon: SteelIcon },
-        { name: 'water', icon: WaterIcon },
-      ],
+      typeIcons: {
+        Bug: BugIcon,
+        Dark: DarkIcon,
+        Dragon: DragonIcon,
+        Electric: ElectricIcon,
+        Fairy: FairyIcon,
+        Fighting: FightingIcon,
+        Fire: FireIcon,
+        Flying: FlyingIcon,
+        Ghost: GhostIcon,
+        Grass: GrassIcon,
+        Ground: GroundIcon,
+        Ice: IceIcon,
+        Normal: NormalIcon,
+        Poison: PoisonIcon,
+        Psychic: PsychicIcon,
+        Rock: RockIcon,
+        Steel: SteelIcon,
+        Water: WaterIcon
+      },
       pokemonTypesWithTranslations: [],
       pokemonRegionsWithTranslations: []
     };
   },
-  async mounted() { //Lifecyclehook
+  async mounted() {
+    this.getLocalStorageSizeInMB();
     await this.getPokemon();
     await this.fetchPokemonTypes();
     await this.fetchRegions();
     this.loadIconStates();
   },
   methods: {
+    getLocalStorageSizeInMB() {
+      let totalSizeInBytes = 0;
+
+      // Iterate over all items in local storage
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const value = localStorage.getItem(key);
+
+        // Calculate size in bytes (approximation: 2 bytes per character)
+        totalSizeInBytes += (key.length + value.length) * 2;
+      }
+
+      // Convert bytes to MB (1 MB = 1,048,576 bytes)
+      const totalSizeInMB = totalSizeInBytes / 1048576;
+
+      console.log('Total size of local storage: ' + totalSizeInMB.toFixed(2) + ' MB');
+    },
     toggleLanguage() {
-      if (this.currentLanguage === 'en') {
+      if (this.$i18n.locale === 'en') {
         this.$i18n.locale = 'de';
-        this.currentLanguage = 'de';
         this.currentFlag = FlagDE;
         this.handlePokemonTranslation(this.pokeApiLanguageDe);
-      } else if (this.currentLanguage === 'de') {
-        this.$i18n.locale = 'jp'
-        this.currentLanguage = 'jp';
+      } else if (this.$i18n.locale === 'de') {
+        this.$i18n.locale = 'jp';
         this.currentFlag = FlagJP;
         this.handlePokemonTranslation(this.pokeApiLanguageJp);
       } else {
-        this.$i18n.locale = 'en'
-        this.currentLanguage = 'en';
+        this.$i18n.locale = 'en';
         this.currentFlag = FlagEN;
         this.handlePokemonTranslation(this.pokeApiLanguageEn);
       }
@@ -216,12 +237,12 @@ export default {
       this.setLanguageForPokemonCards(pokeApiLanguage);
     },
     onPokeballClick(pokemon, iconType) {
-      const pokemonNumber = pokemon.number;
-      if (!this.iconStates[pokemonNumber]) {
-        this.iconStates[pokemonNumber] = {};
+      const uniqueID = pokemon.uniqueID; // Use uniqueID instead of number
+      if (!this.iconStates[uniqueID]) {
+        this.iconStates[uniqueID] = {};
       }
 
-      this.iconStates[pokemonNumber][iconType] = !this.iconStates[pokemonNumber][iconType];
+      this.iconStates[uniqueID][iconType] = !this.iconStates[uniqueID][iconType];
       this.saveIconStates();
     },
     loadIconStates() {
@@ -230,40 +251,20 @@ export default {
         this.iconStates = JSON.parse(savedStates);
       }
     },
-
     saveIconStates() {
       localStorage.setItem('iconStates', JSON.stringify(this.iconStates));
     },
-
     isGrayscale(pokemon, iconType) {
-      const pokemonNumber = pokemon.number;
-      if (!this.iconStates[pokemonNumber]) {
+      const uniqueID = pokemon.uniqueID; // Use uniqueID instead of number
+      if (!this.iconStates[uniqueID]) {
         return false;
       }
-      return !!this.iconStates[pokemonNumber][iconType];
+      return !!this.iconStates[uniqueID][iconType];
     },
     findTypeIcon(typeName) {
-      //haesslich aber Array iterieren klappt aus unerfindlichen Gruenden nicht :'(
-      if(typeName === "Bug") return BugIcon;
-      if(typeName === "Dark") return DarkIcon;
-      if(typeName === "Dragon") return DragonIcon;
-      if(typeName === "Electric") return ElectricIcon;
-      if(typeName === "Fairy") return FairyIcon;
-      if(typeName === "Fighting") return FightingIcon;
-      if(typeName === "Fire") return FireIcon;
-      if(typeName === "Flying") return FlyingIcon;
-      if(typeName === "Ghost") return GhostIcon;
-      if(typeName === "Grass") return GrassIcon;
-      if(typeName === "Ground") return GroundIcon;
-      if(typeName === "Ice") return IceIcon;
-      if(typeName === "Normal") return NormalIcon;
-      if(typeName === "Poison") return PoisonIcon;
-      if(typeName === "Psychic") return PsychicIcon;
-      if(typeName === "Rock") return RockIcon;
-      if(typeName === "Steel") return SteelIcon;
-      if(typeName === "Water") return WaterIcon;
-      return QuestionMarkIcon;
+      return this.typeIcons[typeName] || QuestionMarkIcon;
     },
+    // used for the search function
     scrollToPokemon(inputValue) {
       const searchQuery = inputValue.toLowerCase();
 
@@ -273,10 +274,11 @@ export default {
       );
 
       if (foundPokemon) {
-        this.foundPokemonNumber = foundPokemon.number;
+        this.foundPokemonUniqueID = foundPokemon.uniqueID;
 
         this.$nextTick(() => {
-          const element = document.getElementById(`pokemon-${foundPokemon.number}`);
+          console.log(`pokemon-${foundPokemon.number}`);
+          const element = document.getElementById(`pokemon-${foundPokemon.uniqueID}`);
           if (element) {
             element.scrollIntoView({ behavior: 'smooth' });
           } else {
@@ -285,70 +287,120 @@ export default {
         });
       } else {
         console.log('Pokemon not found');
-        this.foundPokemonNumber = null;
+        this.foundPokemonUniqueID = null;
       }
     },
     resetFilter() {
       this.selectedTypes = [];
       this.pokemons = this.allPokemons;
       this.searchInput = '';
-      this.foundPokemonNumber = null; // Clear the found Pokémon
+      this.foundPokemonUniqueID = null;
     },
     applyFilter() {
       this.pokemons = this.allPokemons.filter(pokemon => {
-        const typeMatch = this.selectedTypes.length === 0 || pokemon.types.some(type => this.selectedTypes.includes(this.convertTypeNameToEnglish(type)));
+        const typeMatch = this.selectedTypes.length === 0 || pokemon.types.some(type => this.selectedTypes.includes(this.searchWrapper('single', 'en', this.pokemonTypesWithTranslations, type)));
         const regionMatch = this.selectedRegions.length === 0 || this.selectedRegions.includes(pokemon.region);
         return typeMatch && regionMatch;
       });
     },
     setLanguageForPokemonCards() {
       this.pokemons.forEach(pokemon => {
-        this.fetchLanguageData(pokemon.number)
-            .then(data => {
-                pokemon.name = data.names[this.pokeApiCurrentLanguage].name
-            })
-            .catch(error => {
-              console.error('Error in setLanguageForPokemonCards:', error);
-            });
+        const pokemonNamesWithTranslations = this.globalPokemonNamesWithTranslations.find(translation =>
+            translation.nameEN === pokemon.name ||
+            translation.nameDE === pokemon.name ||
+            translation.nameJP === pokemon.name
+        );
+
+        const regionTranslation = this.searchWrapper('single', this.$i18n.locale, this.pokemonRegionsWithTranslations, pokemon.region);
+
+        if (pokemonNamesWithTranslations) {
+          if (this.$i18n.locale === 'en') {
+            pokemon.name = pokemonNamesWithTranslations.nameEN;
+            pokemon.region = regionTranslation;
+          } else if (this.$i18n.locale === 'de') {
+            pokemon.name = pokemonNamesWithTranslations.nameDE;
+            pokemon.region = regionTranslation;
+          } else if (this.$i18n.locale === 'jp') {
+            pokemon.name = pokemonNamesWithTranslations.nameJP;
+            pokemon.region = regionTranslation;
+          }
+        }
       });
     },
-    fetchLanguageData(id) {
-      const apiUrl = `https://pokeapi.co/api/v2/pokemon-species/${id}/`;
-      const localStorageKey = `pokemonLanguageData_${id}`;
+    async addSinglePokemonNameTranslationsToGlobalList(url) {
+      let objectWithTranslatedNames;
+      try {
+        let response = await axios.get(url);
+        const allTranslationsForSingleName = response.data.names;
 
-      // Check if the data is already in local storage
-      const cachedData = localStorage.getItem(localStorageKey);
-      if (cachedData) {
-        return Promise.resolve(JSON.parse(cachedData));
+        const nameEN = allTranslationsForSingleName.find(name => name.language.name === 'en')?.name || 'N/A';
+        const nameDE = allTranslationsForSingleName.find(name => name.language.name === 'de')?.name || 'N/A';
+        const nameJP = allTranslationsForSingleName.find(name => name.language.name === 'ja')?.name || 'N/A';
+
+        objectWithTranslatedNames = { nameEN, nameDE, nameJP };
+        this.globalPokemonNamesWithTranslations.push(objectWithTranslatedNames);
+      } catch (error) {
+        console.error('Error fetching data:', error);
       }
-
-      // Fetch from API and store in local storage
-      return axios.get(apiUrl)
-          .then(response => {
-            localStorage.setItem(localStorageKey, JSON.stringify(response.data));
-            return response.data;
-          })
-          .catch(error => {
-            console.error('Error fetching language data:', error);
-          })
     },
-    async getPokemon() {
-      const localStorageKey = 'pokemonsData';
-      let pokemonsData = localStorage.getItem(localStorageKey);
+    // wrapper to handle different searche scenarios
+    searchWrapper(listOrSingle, targetLanguage, targetCollection, searchString) {
+      if(listOrSingle === 'list') return this.getTranslatedList(targetCollection);
+      if(listOrSingle === 'single') {
+        return this.getObjectByLanguage(targetLanguage, searchString, targetCollection);
+      }
+    },
+    getObjectByLanguage(targetLanguage, searchString, targetCollection) {
+      if(targetLanguage === null) targetLanguage = this.$i18n.locale;
 
-      if (!pokemonsData) {
+      const foundObject = targetCollection.find(t =>
+          t.nameEN === searchString || t.nameDE === searchString || t.nameJP === searchString
+      );
+      if(foundObject) {
+        if(targetLanguage === 'en') {
+          return foundObject.nameEN;
+        } else if (targetLanguage === 'de') {
+          return foundObject.nameDE;
+        } else if ((targetLanguage === 'jp')) {
+          return foundObject.nameJP;
+        }
+      }
+    },
+    getTranslatedList(targetCollection) {
+      const translatedCollection = [];
+      for (let i = 0; i < targetCollection.length; i++) {
+        if(this.$i18n.locale == 'en') {
+          translatedCollection.push(targetCollection[i].nameEN);
+        } else if(this.$i18n.locale == 'de') {
+          translatedCollection.push(targetCollection[i].nameDE);
+        } else if(this.$i18n.locale == 'jp') {
+          translatedCollection.push(targetCollection[i].nameJP);
+        }
+      }
+      return translatedCollection;
+    },
+    // uses the pokeApi to get the data for the pokemons
+    async getPokemon() {
+      let allPokemonList = localStorage.getItem('pokemonListWithStats');
+
+      if (!allPokemonList) {
+        console.log('PokeAPI was called by method getPokemon()');
         try {
-          const response = await axios.get('https://pokeapi.co/api/v2/pokemon?limit=3');
+          const response = await axios.get(this.pokeApiGeneralListURL);
           const pokemonData = response.data.results;
 
           const pokemonDetails = await Promise.all(
               pokemonData.map(async (pokemon) => {
                 const detailResponse = await axios.get(pokemon.url);
-                const types = detailResponse.data.types.map(t => t.type.name);
-                const number = detailResponse.data.id; // Pokedex number
+                await this.addSinglePokemonNameTranslationsToGlobalList(detailResponse.data.species.url);
+                const types = detailResponse.data.types.map(t => this.capitalizeFirstLetter(t.type.name));
+                const number = detailResponse.data.id;
                 const region = this.determineRegion(number);
-
+                if(detailResponse.data.forms.length > 1) {
+                  this.alternativeForms.push(detailResponse);
+                }
                 return {
+                  uniqueID: this.getUniqueID(),
                   name: this.capitalizeFirstLetter(pokemon.name),
                   image: detailResponse.data.sprites.front_default,
                   details: {
@@ -363,26 +415,70 @@ export default {
               })
           );
 
-          pokemonsData = pokemonDetails;
-          localStorage.setItem(localStorageKey, JSON.stringify(pokemonsData));
+          allPokemonList = pokemonDetails;
+          let alternativeForms = [];
+          // Alternative Forms
+          for (var listOfAlternativeForms of this.alternativeForms) {
+            //single Pokemon eg Inkognito
+            console.log(listOfAlternativeForms);
+            let name = listOfAlternativeForms.data.name;
+            let height = listOfAlternativeForms.data.height;
+            let weight = listOfAlternativeForms.data.weight;
+            let stats = listOfAlternativeForms.data.stats;
+            let types = listOfAlternativeForms.data.types.map(t => this.capitalizeFirstLetter(t.type.name));
+            let number = listOfAlternativeForms.data.id;
+            let region = this.determineRegion(number);
+
+            // iterate forms of a pokemon
+            for(var form of listOfAlternativeForms.data.forms) {
+              const formObject = await axios.get(form.url);
+              const formName = formObject.data.name;
+              const formImage = formObject.data.sprites.front_default;
+
+              let pokemonForm = {
+                uniqueID: this.getUniqueID(),
+                name: formName,
+                image: formImage,
+                details: {
+                  height: height,
+                  weight: weight,
+                },
+                stats: stats,
+                types: types,
+                number: number,
+                region: region,
+              }
+              allPokemonList.push(pokemonForm);
+            }
+          }
+          localStorage.setItem('pokemonListWithStats', JSON.stringify(allPokemonList));
+          localStorage.setItem('pokemonNamesWithTranslations', JSON.stringify(this.globalPokemonNamesWithTranslations));
         } catch (error) {
           console.error(error);
         }
       } else {
-        pokemonsData = JSON.parse(pokemonsData);
+        allPokemonList = JSON.parse(allPokemonList);
+        this.globalPokemonNamesWithTranslations = localStorage.getItem('pokemonNamesWithTranslations');
+        this.globalPokemonNamesWithTranslations = JSON.parse(this.globalPokemonNamesWithTranslations);
       }
-      this.allPokemons = pokemonsData;
-      this.pokemons = pokemonsData;
+      this.allPokemons = allPokemonList;
+      this.pokemons = allPokemonList;
+      this.pokemons = this.pokemons.sort((a, b) => a.number - b.number);
       this.pokemons.forEach(pokemon => {
         const pokemonNumber = pokemon.number;
         if (!this.iconStates[pokemonNumber]) {
           this.iconStates[pokemonNumber] = {
-            pokeball: true, // Initial grayscale state set to true
-            fernglas: true, // Assuming for other icons as well
+            pokeball: true,
+            fernglas: true,
             shiny: true
           };
         }
       });
+    },
+    getUniqueID() {
+      let id = this.uniqueId;
+      this.uniqueId++;
+      return id;
     },
     determineRegion(number) {
       if (number >= 1 && number <= 151) return 'Kanto';
@@ -393,7 +489,7 @@ export default {
       if (number >= 650 && number <= 721) return 'Kalos';
       if (number >= 722 && number <= 809) return 'Alola';
       if (number >= 810) return 'Galar';
-      return 'Unknown'; // For numbers that don't fall into any category
+      return 'Unknown';
     },
     clearLocalStorage() {
       localStorage.clear();
@@ -405,96 +501,36 @@ export default {
     capitalizeFirstLetter(string) {
       return string.charAt(0).toUpperCase() + string.slice(1);
     },
-    // Sucht aus dem Array mit allen Uebersetzungen das Objekt passend zum Typ und aus diesem dann die richtige Sprache
-    // relevant fuer die einzelnen Pokemon
-    getTypeByLanguage(type) {
-      type = this.capitalizeFirstLetter(type);
-      const typeObject = this.pokemonTypesWithTranslations.find(t => t.nameEN === type);
-      if(this.currentLanguage === 'en') {
-        return type;
-      } else if (this.currentLanguage === 'de'){
-        return typeObject.nameDE;
-      } else if (this.currentLanguage === 'jp'){
-        return typeObject.nameJP;
-      }
-    },
-    // alle Typen in der aktuellen Sprache. Relevant fuer den Filter
-    getTypesByLanguage() {
-      if(this.currentLanguage === 'en') {
-        return this.pokemonTypesWithTranslations.map(t => t.nameEN);
-      } else if (this.currentLanguage === 'de'){
-        return this.pokemonTypesWithTranslations.map(t => t.nameDE);
-      } else if (this.currentLanguage === 'jp'){
-        return this.pokemonTypesWithTranslations.map(t => t.nameJP);
-      }
-    },
-    getRegionsByLanguage() {
-      console.log("getRegionsByLanguage was called");
-      console.log('current language');
-      console.log(this.currentLanguage);
-      if(this.currentLanguage === 'en') {
-        return this.pokemonRegionsWithTranslations.map(t => t.nameEN);
-      } else if (this.currentLanguage === 'de'){
-        return this.pokemonRegionsWithTranslations.map(t => t.nameDE);
-      } else if (this.currentLanguage === 'jp'){
-        console.log(this.pokemonRegionsWithTranslations);
-        console.log('break');
-        console.log(this.pokemonRegionsWithTranslations.map(t => t.nameJP));
-        return this.pokemonRegionsWithTranslations.map(t => t.nameJP);
-      }
-    },
-    convertTypeNameToEnglish(type) {
-      type = this.capitalizeFirstLetter(type);
-
-      const foundTypeObject = this.pokemonTypesWithTranslations.find(t =>
-          t.nameEN === type || t.nameDE === type || t.nameJP === type
-      );
-      if(foundTypeObject) {
-        return foundTypeObject.nameEN;
-      } else {
-        return type;
-      }
-    },
-    convertRegionNameToEnglish(region) {
-      region = this.capitalizeFirstLetter(region);
-
-      const foundRegionObject = this.pokemonRegionsWithTranslations.find(t =>
-          t.nameEN === region || t.nameDE === region || t.nameJP === region
-      );
-      if(foundRegionObject) {
-        return foundRegionObject.nameEN;
-      } else {
-        return region;
-      }
-    },
     //fetch all pokemon types and build an array with all translations
     async fetchPokemonTypes() {
-        if(localStorage.getItem('pokemonTypesWithTranslations')) {
-          this.pokemonTypesWithTranslations = JSON.parse(localStorage.getItem('typesWithTranslations'));
-        } else {
-          const typesWithTranslations = [];
-          const response = await axios.get('https://pokeapi.co/api/v2/type');
-          const types = response.data.results;
+      if(localStorage.getItem('pokemonTypesWithTranslations')) {
+        this.pokemonTypesWithTranslations = JSON.parse(localStorage.getItem('pokemonTypesWithTranslations'));
+      } else {
+        const typesWithTranslations = [];
+        console.log('PokeAPI was called by fetchPokemonTypes()');
+        const response = await axios.get('https://pokeapi.co/api/v2/type');
+        const types = response.data.results;
 
-          for (let i = 0; i < types.length; i++) {
-            const singleTypeResponse = await axios.get(types[i].url);
-            const singleTypeMetaData = singleTypeResponse.data.names;
+        for (let i = 0; i < types.length; i++) {
+          const singleTypeResponse = await axios.get(types[i].url);
+          const singleTypeMetaData = singleTypeResponse.data.names;
 
-            const nameEN = singleTypeMetaData.find(name => name.language.name === 'en')?.name || 'N/A';
-            const nameDE = singleTypeMetaData.find(name => name.language.name === 'de')?.name || 'N/A';
-            const nameJP = singleTypeMetaData.find(name => name.language.name === 'ja')?.name || 'N/A';
+          const nameEN = singleTypeMetaData.find(name => name.language.name === 'en')?.name || 'N/A';
+          const nameDE = singleTypeMetaData.find(name => name.language.name === 'de')?.name || 'N/A';
+          const nameJP = singleTypeMetaData.find(name => name.language.name === 'ja')?.name || 'N/A';
 
-            const typeMetaData = { nameEN, nameDE, nameJP };
-            typesWithTranslations.push(typeMetaData);
-          }
-          this.pokemonTypesWithTranslations = typesWithTranslations;
-          localStorage.setItem('typesWithTranslations', JSON.stringify(typesWithTranslations));
+          const typeMetaData = { nameEN, nameDE, nameJP };
+          typesWithTranslations.push(typeMetaData);
         }
+        this.pokemonTypesWithTranslations = typesWithTranslations;
+        localStorage.setItem('pokemonTypesWithTranslations', JSON.stringify(typesWithTranslations));
+      }
     },
     async fetchRegions() {
       if(localStorage.getItem('pokemonRegionsWithTranslations')) {
         this.pokemonRegionsWithTranslations = JSON.parse(localStorage.getItem('pokemonRegionsWithTranslations'));
       } else {
+        console.log('PokeAPI was called by fetchRegions');
         const response = await axios.get('https://pokeapi.co/api/v2/region');
         const regions = response.data.results;
         const regionsWithMetaData = [];
@@ -512,9 +548,10 @@ export default {
         }
         this.pokemonRegionsWithTranslations = regionsWithMetaData;
         localStorage.setItem('pokemonRegionsWithTranslations', JSON.stringify(this.pokemonRegionsWithTranslations));
+        this.regions = this.searchWrapper('list', 'en', this.pokemonRegionsWithTranslations, null);
       }
+    },
     }
-  }
 };
 </script>
 
