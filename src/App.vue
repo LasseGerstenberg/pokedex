@@ -153,7 +153,7 @@ export default {
       pokeApiLanguageDe: 5,
       pokeApiLanguageEn: 8,
       pokeApiLanguageJp: 9,
-      pokeApiGeneralListURL: 'https://pokeapi.co/api/v2/pokemon?limit=450',
+      pokeApiGeneralListURL: 'https://pokeapi.co/api/v2/pokemon?limit=350',
       uniqueId: 0,
       globalPokemonList: [],
       globalPokemonNamesWithTranslations: [],
