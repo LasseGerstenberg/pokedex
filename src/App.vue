@@ -203,16 +203,13 @@ export default {
     getLocalStorageSizeInMB() {
       let totalSizeInBytes = 0;
 
-      // Iterate over all items in local storage
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         const value = localStorage.getItem(key);
 
-        // Calculate size in bytes (approximation: 2 bytes per character)
         totalSizeInBytes += (key.length + value.length) * 2;
       }
 
-      // Convert bytes to MB (1 MB = 1,048,576 bytes)
       const totalSizeInMB = totalSizeInBytes / 1048576;
 
       console.log('Total size of local storage: ' + totalSizeInMB.toFixed(2) + ' MB');
@@ -255,7 +252,7 @@ export default {
       localStorage.setItem('iconStates', JSON.stringify(this.iconStates));
     },
     isGrayscale(pokemon, iconType) {
-      const uniqueID = pokemon.uniqueID; // Use uniqueID instead of number
+      const uniqueID = pokemon.uniqueID;
       if (!this.iconStates[uniqueID]) {
         return false;
       }
@@ -264,7 +261,6 @@ export default {
     findTypeIcon(typeName) {
       return this.typeIcons[typeName] || QuestionMarkIcon;
     },
-    // used for the search function
     scrollToPokemon(inputValue) {
       const searchQuery = inputValue.toLowerCase();
 
@@ -277,7 +273,6 @@ export default {
         this.foundPokemonUniqueID = foundPokemon.uniqueID;
 
         this.$nextTick(() => {
-          console.log(`pokemon-${foundPokemon.number}`);
           const element = document.getElementById(`pokemon-${foundPokemon.uniqueID}`);
           if (element) {
             element.scrollIntoView({ behavior: 'smooth' });
@@ -421,7 +416,6 @@ export default {
           // Alternative Forms
           for (var listOfAlternativeForms of this.alternativeForms) {
             //single Pokemon eg Inkognito
-            console.log(listOfAlternativeForms);
             let name = listOfAlternativeForms.data.name;
             let height = listOfAlternativeForms.data.height;
             let weight = listOfAlternativeForms.data.weight;
