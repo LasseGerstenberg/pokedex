@@ -291,6 +291,7 @@ export default {
       }
     },
     resetFilter() {
+      this.selectedRegions = [];
       this.selectedTypes = [];
       this.pokemons = this.allPokemons;
       this.searchInput = '';
